@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · 万界战力榜</title>
+<style>
+  :root { --bg:#14102b; --card:#1e1940; --line:#3a3270; --text:#ece8ff; --muted:#9c94cc; --gold:#f0b94d; --err:#ff8a8a; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:20px;
+         background:radial-gradient(ellipse at top, #2a2060, var(--bg) 60%); color:var(--text);
+         font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+  .box { width:100%; max-width:380px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:28px; }
+  h1 { margin:0 0 4px; font-size:22px; letter-spacing:.05em; }
+  p.sub { margin:0 0 22px; color:var(--muted); font-size:14px; }
+  .tabs { display:flex; gap:8px; margin-bottom:18px; }
+  .tabs button { flex:1; padding:9px; background:transparent; color:var(--muted); border:1px solid var(--line); border-radius:8px; font-size:15px; }
+  .tabs button.on { color:var(--bg); background:var(--gold); border-color:var(--gold); font-weight:600; }
+  label { display:block; font-size:13px; color:var(--muted); margin:12px 0 5px; }
+  input { width:100%; padding:11px 12px; font-size:16px; color:var(--text); background:#120e2a; border:1px solid var(--line); border-radius:8px; }
+  input:focus-visible, button:focus-visible, a:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  .go { width:100%; margin-top:20px; padding:12px; font-size:16px; font-weight:600; color:var(--bg); background:var(--gold); border:0; border-radius:8px; }
+  .go:disabled { opacity:.6; }
+  .msg { margin-top:14px; font-size:14px; min-height:20px; }
+  .msg.err { color:var(--err); }
+  .msg.ok { color:var(--gold); }
+  .me { display:none; }
+  .me .row { margin:8px 0; font-size:15px; }
+  .me .row span { color:var(--muted); }
+  .out { width:100%; margin-top:16px; padding:11px; font-size:15px; color:var(--text); background:transparent; border:1px solid var(--line); border-radius:8px; }
+  a { color:var(--gold); }
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>万界战力榜</h1>
+  <p class="sub" id="sub">登录后可提交原创角色</p>
+
+  <div id="formArea">
+    <div class="tabs">
+      <button type="button" id="tabLogin" class="on">登录</button>
+      <button type="button" id="tabReg">注册</button>
+    </div>
+    <label for="email">邮箱</label>
+    <input id="email" type="email" autocomplete="email" inputmode="email">
+    <label for="pwd">密码（至少 6 位）</label>
+    <input id="pwd" type="password" autocomplete="current-password">
+    <button class="go" id="go" type="button">登录</button>
+  </div>
+
+  <div class="me" id="meArea">
+    <div class="row"><span>账号：</span><b id="meEmail"></b></div>
+    <div class="row"><span>身份：</span><b id="meRole"></b></div>
+    <div class="row"><span>状态：</span><b id="meStatus"></b></div>
+    <div class="row" id="adminLink" style="display:none"><a href="admin.html">进入站长后台</a></div>
+    <div class="row"><a href="./">返回首页</a></div>
+    <button class="out" id="out" type="button">退出登录</button>
+  </div>
+
+  <div class="msg" id="msg" role="status"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+  // ====== 只需要改这两行 ======
+  const SUPABASE_URL = "https://wkvdwdryofxkdqrzjxrc.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_yiX8PUtIeStcR3BePHcL_Q_Bv2N4nsS";
+  // ===========================
+
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const $ = id => document.getElementById(id);
+  let mode = "login";
+
+  function say(text, type) { const m = $("msg"); m.textContent = text || ""; m.className = "msg " + (type || ""); }
+
+  function setMode(m) {
+    mode = m;
+    $("tabLogin").classList.toggle("on", m === "login");
+    $("tabReg").classList.toggle("on", m === "reg");
+    $("go").textContent = m === "login" ? "登录" : "注册";
+    $("pwd").autocomplete = m === "login" ? "current-password" : "new-password";
+    say("");
+  }
+  $("tabLogin").onclick = () => setMode("login");
+  $("tabReg").onclick = () => setMode("reg");
+
+  function errText(e) {
+    const t = (e && e.message) || "";
+    if (t.includes("Invalid login")) return "邮箱或密码不对";
+    if (t.includes("already registered")) return "这个邮箱已注册，请直接登录";
+    if (t.includes("Email not confirmed")) return "邮箱还没确认，请先点邮件里的确认链接";
+    if (t.includes("at least 6")) return "密码至少 6 位";
+    if (t.includes("rate limit")) return "操作太频繁，请稍后再试";
+    return "出错了：" + t;
+  }
+
+  $("go").onclick = async () => {
+    const email = $("email").value.trim(), password = $("pwd").value;
+    if (!email || !password) { say("请填写邮箱和密码", "err"); return; }
+    $("go").disabled = true; say("处理中…");
+    try {
+      if (mode === "login") {
+        const { error } = await db.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        await showMe();
+      } else {
+        const { data, error } = await db.auth.signUp({ email, password });
+        if (error) throw error;
+        if (data.session) { await showMe(); }
+        else { say("注册成功！请去邮箱点确认链接，然后回来登录", "ok"); setMode("login"); }
+      }
+    } catch (e) { say(errText(e), "err"); }
+    $("go").disabled = false;
+  };
+
+  async function showMe() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) { $("formArea").style.display = ""; $("meArea").style.display = "none"; return; }
+    const { data: p } = await db.from("profiles").select("username, role, status").eq("id", user.id).maybeSingle();
+    if (p && p.status === "banned") {
+      await db.auth.signOut();
+      say("该账号已被封禁，无法使用", "err");
+      return;
+    }
+    $("formArea").style.display = "none";
+    $("meArea").style.display = "block";
+    $("sub").textContent = "已登录";
+    $("meEmail").textContent = user.email;
+    $("meRole").textContent = p && p.role === "admin" ? "站长" : "普通用户";
+    $("meStatus").textContent = p ? "正常" : "资料未生成";
+    $("adminLink").style.display = p && p.role === "admin" ? "block" : "none";
+    say("");
+  }
+
+  $("out").onclick = async () => {
+    await db.auth.signOut();
+    $("meArea").style.display = "none"; $("formArea").style.display = "";
+    $("sub").textContent = "登录后可提交原创角色";
+    say("已退出登录", "ok");
+  };
+
+  showMe();
+</script>
+</body>
+</html>
