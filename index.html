@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>万界战力榜</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #080d1b;
+      color: white;
+    }
+    header {
+      padding: 22px 16px;
+      text-align: center;
+      background: linear-gradient(135deg, #172b59, #35165e);
+      border-bottom: 1px solid #33436b;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 30px;
+      color: #f5d889;
+    }
+    header p { color: #c4cbe0; }
+    nav {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 18px;
+      padding: 14px;
+      background: #111a30;
+    }
+    nav a { color: #d9e4ff; text-decoration: none; }
+    main { max-width: 900px; margin: auto; padding: 20px 14px; }
+    .hero {
+      text-align: center;
+      padding: 38px 18px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #172c55, #291947);
+      border: 1px solid #435681;
+    }
+    .hero h2 { font-size: 27px; color: #ffdf91; }
+    .hero p { color: #c5cce0; line-height: 1.8; }
+    .button {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      background: #e5b84f;
+      color: #171322;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    h2.section-title { color: #f5d889; margin-top: 30px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      padding: 18px;
+      background: #121c32;
+      border: 1px solid #293b60;
+      border-radius: 14px;
+    }
+    .card h3 { color: #e9c878; margin-top: 0; }
+    .card p { color: #b9c5dd; line-height: 1.7; }
+    footer {
+      text-align: center;
+      padding: 25px;
+      color: #8593ad;
+      border-top: 1px solid #263451;
+      margin-top: 35px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>万界战力榜</h1>
+    <p>原创角色 · 跨界对决 · 战力排行</p>
+  </header>
+
+  <nav>
+    <a href="#">首页</a>
+    <a href="#ranking">战力榜</a>
+    <a href="#features">核心功能</a>
+    <a href="#about">关于我们</a>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <h2>谁，才是真正的万界最强？</h2>
+      <p>创造属于你的原创角色，设定能力与弱点，参与跨界对决，挑战万界战力巅峰！</p>
+      <a class="button" href="#features">探索万界</a>
+    </section>
+
+    <h2 class="section-title" id="ranking">🏆 万界战力榜</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>暂无正式排名</h3>
+        <p>这里将展示经过审核的原创角色和战力排名。</p>
+      </div>
+      <div class="card">
+        <h3>战力系统筹备中</h3>
+        <p>未来将结合角色能力、弱点和战斗表现进行分析。</p>
+      </div>
+    </div>
+
+    <h2 class="section-title" id="features">⚔️ 核心功能</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>🎭 原创角色</h3>
+        <p>创建自己的角色，设计背景、能力、限制和弱点。</p>
+      </div>
+      <div class="card">
+        <h3>🤖 AI 战斗分析</h3>
+        <p>分析双方能力，推演战斗过程，解释胜负原因。</p>
+      </div>
+      <div class="card">
+        <h3>🏆 排行榜</h3>
+        <p>根据经过审核的角色和比赛结果展示排名。</p>
+      </div>
+      <div class="card">
+        <h3>🛡️ 人工审核</h3>
+        <p>所有公开角色必须经过站长人工审核。</p>
+      </div>
+    </div>
+
+    <h2 class="section-title" id="about">🌌 关于万界战力榜</h2>
+    <div class="card">
+      <p>这是一个以原创角色为核心的战力分析与对战推演平台。所有角色均应由创作者原创或拥有合法授权。</p>
+    </div>
+  </main>
+
+  <footer>
+    万界战力榜 · 私人测试版<br>
+    © 2026 版权所有
+  </footer>
+</body>
+</html>
