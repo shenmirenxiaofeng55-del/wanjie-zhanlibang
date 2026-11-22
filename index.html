@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -88,6 +87,7 @@
     <a href="#ranking">战力榜</a>
     <a href="#features">核心功能</a>
     <a href="#about">关于我们</a>
+    <a href="login.html" id="authLink">登录</a>
   </nav>
 
   <main>
@@ -139,5 +139,20 @@
     万界战力榜 · 私人测试版<br>
     © 2026 版权所有
   </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script>
+    // 已登录时，把导航里的「登录」改成「我的账号」
+    (async () => {
+      try {
+        const db = supabase.createClient(
+          "https://wkvdwdryofxkdqrzjxrc.supabase.co",
+          "sb_publishable_yiX8PUtIeStcR3BePHcL_Q_Bv2N4nsS"
+        );
+        const { data: { session } } = await db.auth.getSession();
+        if (session) document.getElementById("authLink").textContent = "我的账号";
+      } catch (e) {}
+    })();
+  </script>
 </body>
 </html>
