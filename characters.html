@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>查看角色 · 万界战力榜</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #080d1b; color: white; }
+    header { padding: 22px 16px; text-align: center; background: linear-gradient(135deg, #172b59, #35165e); border-bottom: 1px solid #33436b; }
+    header h1 { margin: 0; font-size: 30px; color: #f5d889; }
+    header p { color: #c4cbe0; margin: 8px 0 0; }
+    nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; padding: 14px; background: #111a30; }
+    nav a { color: #d9e4ff; text-decoration: none; }
+    main { max-width: 960px; margin: auto; padding: 20px 14px; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .top-bar h2 { margin: 0; color: #f5d889; }
+    .btn { display: inline-block; padding: 10px 20px; border-radius: 10px; background: #e5b84f; color: #171322; text-decoration: none; font-weight: bold; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+    .card { padding: 20px; background: #121c32; border: 1px solid #293b60; border-radius: 16px; }
+    .hero-row { display: flex; gap: 16px; align-items: center; }
+    .avatar { width: 96px; height: 96px; border-radius: 14px; border: 2px solid #3c5280; object-fit: contain; background: #0b1326; flex-shrink: 0; }
+    .name { margin: 0; font-size: 22px; color: #f5d889; }
+    .title { color: #9db2d9; font-size: 13px; margin: 4px 0 8px; }
+    .desc { color: #b9c5dd; font-size: 14px; line-height: 1.6; margin: 12px 0; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+    .stat { background: #0b1326; border: 1px solid #233354; border-radius: 10px; padding: 8px; text-align: center; }
+    .stat b { display: block; color: #ffdf91; font-size: 16px; }
+    .stat span { color: #8593ad; font-size: 12px; }
+    .skill-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    .skill { display: flex; gap: 12px; align-items: center; background: #0b1326; border: 1px solid #233354; border-radius: 12px; padding: 10px; }
+    .skill img { width: 46px; height: 46px; border-radius: 10px; flex-shrink: 0; }
+    .skill h4 { margin: 0 0 4px; color: #e9c878; font-size: 15px; }
+    .cd { font-size: 12px; color: #8ab4ff; font-weight: normal; margin-left: 6px; }
+    .skill p { margin: 0; color: #b9c5dd; font-size: 13px; line-height: 1.5; }
+    footer { text-align: center; padding: 25px; color: #8593ad; border-top: 1px solid #263451; margin-top: 35px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>万界战力榜 · 角色图鉴</h1>
+    <p>自定义 2D 角色 · 技能与属性一览</p>
+  </header>
+
+  <nav>
+    <a href="index.html">首页</a>
+    <a href="characters.html">查看角色</a>
+    <a href="battle.html">联机对战</a>
+    <a href="login.html">我的账号</a>
+  </nav>
+
+  <main>
+    <div class="top-bar">
+      <h2>🎭 可用出战角色</h2>
+      <a class="btn" href="battle.html">去开房间对战</a>
+    </div>
+    <div id="charGrid" class="grid"></div>
+  </main>
+
+  <footer>
+    万界战力榜 · 私人测试版<br>
+    © 2026 版权所有
+  </footer>
+
+  <script src="js/characters.js"></script>
+  <script>
+    const grid = document.getElementById("charGrid");
+    function el(tag, cls, text) {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+
+    (window.WANJIE_CHARACTERS || []).forEach(c => {
+      const card = el("div", "card");
+      const hero = el("div", "hero-row");
+      const img = el("img", "avatar");
+      img.src = c.avatar;
+      img.alt = c.name;
+
+      const info = el("div");
+      info.append(el("h3", "name", c.name), el("div", "title", c.title));
+      hero.append(img, info);
+
+      const stats = el("div", "stats");
+      [["生命", c.hp], ["攻击", c.atk], ["防御", c.def], ["速度", c.spd]].forEach(([k, v]) => {
+        const s = el("div", "stat");
+        s.append(el("b", "", String(v)), el("span", "", k));
+        stats.append(s);
+      });
+
+      const skills = el("div", "skill-list");
+      c.skills.forEach(sk => {
+        const row = el("div", "skill");
+        const icon = el("img");
+        icon.src = sk.icon;
+        icon.alt = sk.name;
+        const txt = el("div");
+        const h4 = el("h4", "", sk.name);
+        h4.append(el("span", "cd", sk.cd ? "冷却 " + sk.cd + " 回合" : "无冷却"));
+        txt.append(h4, el("p", "", sk.desc));
+        row.append(icon, txt);
+        skills.append(row);
+      });
+
+      card.append(hero, el("p", "desc", c.desc), stats, skills);
+      grid.append(card);
+    });
+  </script>
+</body>
+</html>
