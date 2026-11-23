@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>联机对战 · 万界战力榜</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #080d1b; color: white; }
+    header { padding: 20px 16px; text-align: center; background: linear-gradient(135deg, #172b59, #35165e); border-bottom: 1px solid #33436b; }
+    header h1 { margin: 0; font-size: 28px; color: #f5d889; }
+    header p { color: #c4cbe0; margin: 6px 0 0; }
+    nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; padding: 14px; background: #111a30; }
+    nav a { color: #d9e4ff; text-decoration: none; }
+    main { max-width: 920px; margin: auto; padding: 18px 14px; }
+    .card { padding: 20px; background: #121c32; border: 1px solid #293b60; border-radius: 16px; margin-bottom: 16px; }
+    .card h2, .card h3 { color: #f5d889; margin-top: 0; }
+    .btn { padding: 11px 20px; border-radius: 10px; border: 0; background: #e5b84f; color: #171322; font-weight: bold; font-size: 15px; cursor: pointer; }
+    .btn.sub { background: transparent; color: #d9e4ff; border: 1px solid #334975; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    input { padding: 11px 14px; border-radius: 10px; border: 1px solid #293b60; background: #0b1326; color: white; font-size: 16px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .msg { color: #b9c5dd; line-height: 1.7; }
+    .msg.err { color: #ff9a9a; }
+
+    /* 选角卡片 */
+    .char-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 14px 0; }
+    .pick-card { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: #0b1326; border: 2px solid #263659; cursor: pointer; }
+    .pick-card.on { border-color: #e5b84f; background: #18233f; }
+    .pick-card img { width: 64px; height: 64px; border-radius: 10px; object-fit: contain; background: #080d1b; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; border: 1px solid #3d5485; color: #9ec0ff; margin-left: 6px; }
+    .badge.ok { border-color: #7fe0a8; color: #7fe0a8; }
+
+    /* 2D 战斗舞台 */
+    .arena { position: relative; padding: 24px 16px; border-radius: 16px; background: radial-gradient(circle at center, #182444 0%, #0a1020 100%); border: 1px solid #334975; overflow: hidden; transition: background .4s; }
+    .arena.domain-on { background: radial-gradient(circle at center, #35165e 0%, #120924 100%); border-color: #b388ff; box-shadow: inset 0 0 40px rgba(179,136,255,.35); }
+    .fighters { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; min-height: 220px; }
+    .fighter { width: 46%; text-align: center; position: relative; }
+    .hp-box { background: #080d1b; border: 1px solid #2b3f66; border-radius: 10px; padding: 8px; margin-bottom: 12px; }
+    .hp-title { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+    .hp-bar { height: 12px; background: #1e2942; border-radius: 99px; overflow: hidden; }
+    .hp-fill { height: 100%; background: linear-gradient(90deg, #43c57b, #7fe0a8); transition: width .35s; }
+    .hp-fill.low { background: linear-gradient(90deg, #ff5252, #ff8a80); }
+    .sprite-wrap { position: relative; display: inline-block; padding: 8px; transition: transform .35s; }
+    .sprite-wrap.rage { transform: scale(1.25); filter: drop-shadow(0 0 14px rgba(255,120,60,.85)); }
+    .sprite { width: 112px; height: 112px; object-fit: contain; transition: transform .25s; }
+    .fighter.right .sprite { transform: scaleX(-1); }
+    .buffs { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; min-height: 22px; margin-top: 6px; }
+    .buff { font-size: 11px; padding: 2px 7px; border-radius: 8px; background: #1b2847; color: #ffdf91; border: 1px solid #3c5385; }
+    .buff.debuff { color: #ff9a9a; border-color: #8f3a4a; background: #2c131d; }
+
+    /* 2D 动作动画 */
+    @keyframes dashL { 0%{transform:translateX(0)} 45%{transform:translateX(55px)} 100%{transform:translateX(0)} }
+    @keyframes dashR { 0%{transform:translateX(0)} 45%{transform:translateX(-55px)} 100%{transform:translateX(0)} }
+    @keyframes hitShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px);filter:brightness(1.8)} 75%{transform:translateX(8px)} }
+    .anim-dash-l { animation: dashL .38s ease; }
+    .anim-dash-r { animation: dashR .38s ease; }
+    .anim-hit { animation: hitShake .35s ease; }
+
+    /* 技能栏 */
+    .skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 14px; }
+    .sk-btn { display: flex; gap: 10px; align-items: center; text-align: left; padding: 10px; border-radius: 12px; background: #0b1326; border: 1px solid #2e436d; color: white; cursor: pointer; }
+    .sk-btn:hover:not(:disabled) { border-color: #e5b84f; }
+    .sk-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .sk-btn img { width: 42px; height: 42px; border-radius: 8px; flex-shrink: 0; }
+    .sk-btn b { display: block; color: #f5d889; font-size: 14px; }
+    .sk-btn span { font-size: 12px; color: #9db2d9; }
+
+    .logs { max-height: 170px; overflow-y: auto; background: #080d1b; border: 1px solid #233354; border-radius: 10px; padding: 10px 12px; margin-top: 14px; font-size: 13px; line-height: 1.7; color: #c5d1ea; }
+    .turn-tip { text-align: center; font-weight: bold; font-size: 16px; color: #ffdf91; margin-bottom: 10px; }
+    footer { text-align: center; padding: 25px; color: #8593ad; border-top: 1px solid #263451; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>万界战力榜 · 联机对战</h1>
+    <p>开房间 · 选角色 · 2D 实时对决</p>
+  </header>
+
+  <nav>
+    <a href="index.html">首页</a>
+    <a href="characters.html">查看角色</a>
+    <a href="battle.html">联机对战</a>
+    <a href="login.html">我的账号</a>
+  </nav>
+
+  <main>
+    <div id="gate" class="card msg">正在检查登录状态…</div>
+
+    <!-- 大厅 -->
+    <section id="lobby" class="card" style="display:none">
+      <h2>⚔️ 创建或加入房间</h2>
+      <div class="row" style="margin-bottom:14px;">
+        <button id="createBtn" class="btn" type="button">创建新房间</button>
+      </div>
+      <div class="row">
+        <input id="joinCode" type="text" maxlength="6" placeholder="输入 6 位房间号" style="text-transform:uppercase;width:180px;">
+        <button id="joinBtn" class="btn sub" type="button">加入房间</button>
+      </div>
+      <p id="lobbyMsg" class="msg"></p>
+    </section>
+
+    <!-- 房间准备区 -->
+    <section id="waitRoom" class="card" style="display:none">
+      <div class="row" style="justify-content:space-between;">
+        <h2 style="margin:0;">房间号：<span id="roomCode"></span></h2>
+        <div class="row">
+          <button id="copyCode" class="btn sub" type="button">复制房间号</button>
+          <button id="leaveBtn" class="btn sub" type="button">退出房间</button>
+        </div>
+      </div>
+      <p class="msg" id="waitStatus"></p>
+
+      <h3>选择出战角色</h3>
+      <div id="charPick" class="char-pick"></div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="readyBtn" class="btn" type="button">准备</button>
+      </div>
+    </section>
+
+    <!-- 2D 战斗区 -->
+    <section id="battleArea" style="display:none">
+      <div class="card">
+        <div id="turnTip" class="turn-tip"></div>
+        <div id="arena" class="arena">
+          <div class="fighters">
+            <div class="fighter left" id="fHost">
+              <div class="hp-box">
+                <div class="hp-title"><b id="hName">房主</b><span id="hHpTxt"></span></div>
+                <div class="hp-bar"><div id="hHpBar" class="hp-fill"></div></div>
+              </div>
+              <div id="hWrap" class="sprite-wrap"><img id="hImg" class="sprite" alt="房主角色"></div>
+              <div id="hBuffs" class="buffs"></div>
+            </div>
+
+            <div class="fighter right" id="fGuest">
+              <div class="hp-box">
+                <div class="hp-title"><b id="gName">对手</b><span id="gHpTxt"></span></div>
+                <div class="hp-bar"><div id="gHpBar" class="hp-fill"></div></div>
+              </div>
+              <div id="gWrap" class="sprite-wrap"><img id="gImg" class="sprite" alt="对手角色"></div>
+              <div id="gBuffs" class="buffs"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="skillBar" class="skills"></div>
+        <div id="endBar" class="row" style="margin-top:14px;display:none;">
+          <button id="rematchBtn" class="btn" type="button">再来一局</button>
+          <button id="exitBattleBtn" class="btn sub" type="button">返回大厅</button>
+        </div>
+        <div id="logs" class="logs"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    万界战力榜 · 私人测试版<br>
+    © 2026 版权所有
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/characters.js"></script>
+  <script>
+    const db = supabase.createClient(
+      "https://wkvdwdryofxkdqrzjxrc.supabase.co",
+      "sb_publishable_yiX8PUtIeStcR3BePHcL_Q_Bv2N4nsS"
+    );
+    const $ = id => document.getElementById(id);
+    const CHARS = window.WANJIE_CHARACTERS || [];
+    const byId = id => CHARS.find(c => c.id === id) || CHARS[0];
+
+    let me = null, room = null, channel = null, pollTimer = null, lastAnimKey = "";
+
+    function el(tag, cls, text) {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+
+    function genCode() {
+      const s = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      return Array.from({ length: 6 }, () => s[Math.floor(Math.random() * s.length)]).join("");
+    }
+
+    function myRole() {
+      if (!room || !me) return null;
+      return room.host_id === me.id ? "host" : (room.guest_id === me.id ? "guest" : null);
+    }
+
+    async function init() {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) {
+        $("gate").textContent = "";
+        const a = el("a", "", "请先登录后再进入联机对战");
+        a.href = "login.html";
+        a.style.color = "#f5d889";
+        $("gate").append(a);
+        return;
+      }
+      me = user;
+      $("gate").style.display = "none";
+      $("lobby").style.display = "block";
+      renderCharPick();
+    }
+
+    function renderCharPick() {
+      const box = $("charPick");
+      box.replaceChildren();
+      CHARS.forEach(c => {
+        const card = el("div", "pick-card");
+        card.dataset.cid = c.id;
+        const img = el("img");
+        img.src = c.avatar;
+        img.alt = c.name;
+        const txt = el("div");
+        txt.append(el("b", "", c.name), el("div", "msg", c.title + " · 生命 " + c.hp));
+        card.append(img, txt);
+        card.onclick = () => pickChar(c.id);
+        box.append(card);
+      });
+    }
+
+    async function enterRoom(r) {
+      room = r;
+      $("lobby").style.display = "none";
+      if (channel) await db.removeChannel(channel);
+      channel = db.channel("room-" + r.id)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rooms", filter: "id=eq." + r.id }, payload => {
+          room = payload.new;
+          renderRoom();
+        })
+        .subscribe();
+
+      clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        if (!room) return;
+        const { data } = await db.from("rooms").select("*").eq("id", room.id).maybeSingle();
+        if (data && data.updated_at !== room.updated_at) { room = data; renderRoom(); }
+      }, 3000);
+
+      renderRoom();
+    }
+
+    $("createBtn").onclick = async () => {
+      $("lobbyMsg").textContent = "正在创建房间…";
+      const code = genCode();
+      const { data, error } = await db.from("rooms").insert({
+        code,
+        host_id: me.id,
+        host_char: CHARS[0].id
+      }).select().single();
+      if (error) { $("lobbyMsg").textContent = "创建失败：" + error.message; $("lobbyMsg").className = "msg err"; return; }
+      enterRoom(data);
+    };
+
+    $("joinBtn").onclick = async () => {
+      const code = $("joinCode").value.trim().toUpperCase();
+      if (!code) return;
+      $("lobbyMsg").textContent = "正在加入…";
+      const { data: r, error } = await db.from("rooms").select("*").eq("code", code).maybeSingle();
+      if (error || !r) { $("lobbyMsg").textContent = "找不到该房间号"; $("lobbyMsg").className = "msg err"; return; }
+      if (r.host_id === me.id || r.guest_id === me.id) { enterRoom(r); return; }
+      if (r.guest_id || r.status !== "waiting") { $("lobbyMsg").textContent = "房间已满或正在对战中"; $("lobbyMsg").className = "msg err"; return; }
+      const { data: updated, error: e2 } = await db.from("rooms").update({
+        guest_id: me.id,
+        guest_char: CHARS[1] ? CHARS[1].id : CHARS[0].id,
+        updated_at: new Date().toISOString()
+      }).eq("id", r.id).select().single();
+      if (e2) { $("lobbyMsg").textContent = "加入失败：" + e2.message; $("lobbyMsg").className = "msg err"; return; }
+      enterRoom(updated);
+    };
+
+    $("copyCode").onclick = () => {
+      if (room) navigator.clipboard?.writeText(room.code);
+      $("waitStatus").textContent = "已复制房间号：" + room.code;
+    };
+
+    $("leaveBtn").onclick = exitToLobby;
+    $("exitBattleBtn").onclick = exitToLobby;
+
+    async function exitToLobby() {
+      if (channel) await db.removeChannel(channel);
+      clearInterval(pollTimer);
+      room = null;
+      $("waitRoom").style.display = "none";
+      $("battleArea").style.display = "none";
+      $("lobby").style.display = "block";
+      $("lobbyMsg").textContent = "";
+    }
+
+    async function pickChar(cid) {
+      const role = myRole();
+      if (!role || room.status !== "waiting") return;
+      const patch = role === "host"
+        ? { host_char: cid, host_ready: false, updated_at: new Date().toISOString() }
+        : { guest_char: cid, guest_ready: false, updated_at: new Date().toISOString() };
+      const { data } = await db.from("rooms").update(patch).eq("id", room.id).select().single();
+      if (data) { room = data; renderRoom(); }
+    }
+
+    function makeFighter(cid) {
+      const c = byId(cid);
+      return { cid: c.id, name: c.name, hp: c.hp, max_hp: c.hp, atk: c.atk, def: c.def, spd: c.spd, cds: [0, 0, 0], onion: 0, emp_atk: 0, rage: false, domain: 0, stunned: false };
+    }
+
+    $("readyBtn").onclick = async () => {
+      const role = myRole();
+      if (!role) return;
+      const nextReady = role === "host" ? !room.host_ready : !room.guest_ready;
+      const otherReady = role === "host" ? room.guest_ready : room.host_ready;
+      const bothReady = nextReady && otherReady && room.guest_id;
+
+      const patch = role === "host"
+        ? { host_ready: nextReady, updated_at: new Date().toISOString() }
+        : { guest_ready: nextReady, updated_at: new Date().toISOString() };
+
+      if (bothReady) {
+        const h = makeFighter(room.host_char);
+        const g = makeFighter(room.guest_char);
+        const first = h.spd >= g.spd ? "host" : "guest";
+        patch.status = "fighting";
+        patch.battle_state = {
+          turn: first,
+          round: 1,
+          host: h,
+          guest: g,
+          last: null,
+          winner: null,
+          logs: ["对决开始！" + (first === "host" ? h.name : g.name) + " 速度更快，先手行动！"]
+        };
+      }
+
+      const { data } = await db.from("rooms").update(patch).eq("id", room.id).select().single();
+      if (data) { room = data; renderRoom(); }
+    };
+
+    function renderRoom() {
+      if (!room) return;
+      if (room.status === "waiting") {
+        $("waitRoom").style.display = "block";
+        $("battleArea").style.display = "none";
+        $("roomCode").textContent = room.code;
+        const role = myRole();
+        const myChar = role === "host" ? room.host_char : room.guest_char;
+        [...$("charPick").children].forEach(c => c.classList.toggle("on", c.dataset.cid === myChar));
+
+        const hName = byId(room.host_char).name + (room.host_ready ? "（已准备）" : "（未准备）");
+        const gName = room.guest_id ? (byId(room.guest_char).name + (room.guest_ready ? "（已准备）" : "（未准备）")) : "等待对手加入…";
+        $("waitStatus").textContent = "房主：" + hName + "  |  对手：" + gName;
+        const myReady = role === "host" ? room.host_ready : room.guest_ready;
+        $("readyBtn").textContent = myReady ? "取消准备" : "准备出战";
+      } else {
+        $("waitRoom").style.display = "none";
+        $("battleArea").style.display = "block";
+        renderBattle();
+      }
+    }
+
+    function renderFighter(side, f, domainDebuff) {
+      const c = byId(f.cid);
+      const p = side === "host" ? "h" : "g";
+      $(p + "Name").textContent = f.name + (myRole() === side ? " (你)" : "");
+      $(p + "HpTxt").textContent = f.hp + " / " + f.max_hp;
+      const pct = Math.max(0, Math.round((f.hp / f.max_hp) * 100));
+      $(p + "HpBar").style.width = pct + "%";
+      $(p + "HpBar").classList.toggle("low", pct <= 30);
+      $(p + "Img").src = c.avatar;
+      $(p + "Wrap").classList.toggle("rage", !!f.rage);
+
+      const buffs = $(p + "Buffs");
+      buffs.replaceChildren();
+      if (f.rage) buffs.append(el("span", "buff", "🥛 牛奶狂暴"));
+      if (f.onion > 0) buffs.append(el("span", "buff", "🧅 强化大葱×" + f.onion));
+      if (f.emp_atk > 0) buffs.append(el("span", "buff", "⚡ 强化普攻 " + f.emp_atk + "回合"));
+      if (f.domain > 0) buffs.append(el("span", "buff", "🌌 领域展开 " + f.domain + "回合"));
+      if (domainDebuff) buffs.append(el("span", "buff debuff", "⬇ 领域破防"));
+      if (f.stunned) buffs.append(el("span", "buff debuff", "💫 被控制"));
+    }
+
+    function renderBattle() {
+      const bs = room.battle_state;
+      if (!bs || !bs.host) return;
+      const domainActive = bs.host.domain > 0 || bs.guest.domain > 0;
+      $("arena").classList.toggle("domain-on", domainActive);
+
+      renderFighter("host", bs.host, bs.guest.domain > 0);
+      renderFighter("guest", bs.guest, bs.host.domain > 0);
+
+      if (bs.last && bs.last.key !== lastAnimKey) {
+        lastAnimKey = bs.last.key;
+        const atkW = bs.last.by === "host" ? $("hWrap") : $("gWrap");
+        const defW = bs.last.by === "host" ? $("gWrap") : $("hWrap");
+        atkW.classList.remove("anim-dash-l", "anim-dash-r");
+        defW.classList.remove("anim-hit");
+        void atkW.offsetWidth;
+        atkW.classList.add(bs.last.by === "host" ? "anim-dash-l" : "anim-dash-r");
+        if (bs.last.hit) defW.classList.add("anim-hit");
+      }
+
+      const role = myRole();
+      const myTurn = room.status === "fighting" && bs.turn === role;
+      if (room.status === "finished") {
+        $("turnTip").textContent = bs.winner === role ? "🏆 恭喜！你赢得了本场对决！" : "💀 对决结束，对手获胜！";
+        $("endBar").style.display = "flex";
+        $("rematchBtn").style.display = role === "host" ? "inline-block" : "none";
+      } else {
+        $("endBar").style.display = "none";
+        $("turnTip").textContent = "第 " + bs.round + " 回合 · " + (myTurn ? "轮到你出招！" : "等待对手行动…");
+      }
+
+      // 渲染自己的技能按钮
+      const meF = bs[role];
+      const charDef = byId(meF.cid);
+      const bar = $("skillBar");
+      bar.replaceChildren();
+
+      const basicBtn = el("button", "sk-btn");
+      basicBtn.type = "button";
+      basicBtn.disabled = !myTurn;
+      const bImg = el("img");
+      bImg.src = charDef.skills[0].icon;
+      const bTxt = el("div");
+      bTxt.append(el("b", "", "普通攻击" + (meF.emp_atk > 0 ? "（强化中）" : "")), el("span", "", "无冷却 · 造成 85% 伤害"));
+      basicBtn.append(bImg, bTxt);
+      basicBtn.onclick = () => act(-1);
+      bar.append(basicBtn);
+
+      charDef.skills.forEach((sk, idx) => {
+        const b = el("button", "sk-btn");
+        b.type = "button";
+        const cd = meF.cds[idx] || 0;
+        b.disabled = !myTurn || cd > 0;
+        const img = el("img");
+        img.src = sk.icon;
+        const txt = el("div");
+        const title = (idx === 2 && meF.rage) ? "狂暴位移突袭" : sk.name;
+        txt.append(el("b", "", title), el("span", "", cd > 0 ? "冷却中：" + cd + " 回合" : "可用"));
+        b.append(img, txt);
+        b.onclick = () => act(idx);
+        bar.append(b);
+      });
+
+      const logs = $("logs");
+      logs.replaceChildren();
+      (bs.logs || []).slice(-12).forEach(line => logs.append(el("div", "", line)));
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function calcDmg(atk, def, mul, enemyInDomain) {
+      const realDef = enemyInDomain ? Math.round(def * 0.75) : def;
+      return Math.max(25, Math.round(atk * mul - realDef * 0.45));
+    }
+
+    async function act(skIdx) {
+      const role = myRole();
+      const bs = JSON.parse(JSON.stringify(room.battle_state));
+      if (room.status !== "fighting" || bs.turn !== role) return;
+
+      const opp = role === "host" ? "guest" : "host";
+      const meF = bs[role], opF = bs[opp];
+      const c = byId(meF.cid);
+      let log = "", hit = true;
+
+      // 冷却递减
+      meF.cds = meF.cds.map(x => Math.max(0, x - 1));
+
+      if (skIdx === -1) {
+        let mul = meF.emp_atk > 0 ? 1.25 : 0.85;
+        let dmg = calcDmg(meF.atk, opF.def, mul, meF.domain > 0);
+        opF.hp = Math.max(0, opF.hp - dmg);
+        log = meF.name + " 使用普通攻击" + (meF.emp_atk > 0 ? "（强化）" : "") + "，造成 " + dmg + " 伤害";
+        if (meF.emp_atk > 0) meF.emp_atk--;
+      } else {
+        const sk = c.skills[skIdx];
+        meF.cds[skIdx] = sk.cd;
+
+        if (sk.type === "dash_onion") {
+          const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
+          opF.hp = Math.max(0, opF.hp - dmg);
+          meF.onion = 1;
+          log = meF.name + " 发动「大葱突进」造成 " + dmg + " 伤害，并获得 1 发强化大葱！";
+        } else if (sk.type === "charge_buff") {
+          const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
+          opF.hp = Math.max(0, opF.hp - dmg);
+          meF.emp_atk = 2;
+          log = meF.name + " 蓄力重击造成 " + dmg + " 大量伤害，并获得 2 回合强化普攻！";
+        } else if (sk.type === "milk_rage") {
+          if (!meF.rage) {
+            meF.rage = true;
+            meF.atk = Math.round(meF.atk * 1.3);
+            meF.def = Math.round(meF.def * 1.15);
+            meF.cds[skIdx] = 1;
+            hit = false;
+            log = meF.name + " 喝下牛奶！体型放大进入【狂暴模式】，属性大幅提升，大招变为位移突袭！";
+          } else {
+            const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
+            opF.hp = Math.max(0, opF.hp - dmg);
+            log = meF.name + " 发动「狂暴位移」高速突袭，造成 " + dmg + " 伤害！";
+          }
+        } else if (sk.type === "stink_cc") {
+          const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
+          opF.hp = Math.max(0, opF.hp - dmg);
+          const cc = Math.random() < 0.65;
+          if (cc) opF.stunned = true;
+          log = meF.name + " 释放「臭气控制」造成 " + dmg + " 伤害" + (cc ? "，对手被熏晕了！" : "！");
+        } else if (sk.type === "laser") {
+          const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
+          opF.hp = Math.max(0, opF.hp - dmg);
+          log = meF.name + " 发射「斜眼激光」贯穿对手，造成 " + dmg + " 伤害！";
+        } else if (sk.type === "domain_cc") {
+          const cost = Math.max(1, Math.floor(meF.hp * 0.28));
+          meF.hp = Math.max(1, meF.hp - cost);
+          const dmg = calcDmg(meF.atk, opF.def, sk.power, true);
+          opF.hp = Math.max(0, opF.hp - dmg);
+          meF.domain = 3;
+          meF.spd += 30;
+          opF.stunned = true;
+          log = meF.name + " 【领域展开】！消耗 " + cost + " 生命值，移速飙升并 100% 强制控制对手，造成 " + dmg + " 伤害！";
+        }
+      }
+
+      // 触发团子环绕大葱额外攻击
+      if (hit && meF.onion > 0 && !(skIdx === 0 && c.skills[0].type === "dash_onion") && opF.hp > 0) {
+        const extra = calcDmg(meF.atk, opF.def, 0.45, meF.domain > 0);
+        opF.hp = Math.max(0, opF.hp - extra);
+        meF.onion = 0;
+        log += " 🧅 环绕大葱追击 +" + extra + " 伤害！";
+      }
+
+      // 领域持续负面扣血
+      if (opF.hp > 0 && meF.domain > 0) {
+        opF.hp = Math.max(0, opF.hp - 45);
+        meF.domain--;
+        log += " 🌌 领域侵蚀对手 -45 生命。";
+      }
+
+      bs.logs.push(log);
+      bs.last = { by: role, hit, key: Date.now() + "-" + Math.random() };
+
+      let nextStatus = "fighting";
+      if (opF.hp <= 0) {
+        nextStatus = "finished";
+        bs.winner = role;
+        bs.logs.push("🎉 " + meF.name + " 击败了 " + opF.name + "！");
+      } else if (opF.stunned) {
+        opF.stunned = false;
+        bs.turn = role;
+        bs.round++;
+        bs.logs.push("💫 " + opF.name + " 被控制跳过回合，" + meF.name + " 继续行动！");
+      } else {
+        bs.turn = opp;
+        bs.round++;
+      }
+
+      const { data } = await db.from("rooms").update({
+        status: nextStatus,
+        battle_state: bs,
+        updated_at: new Date().toISOString()
+      }).eq("id", room.id).select().single();
+      if (data) { room = data; renderRoom(); }
+    }
+
+    $("rematchBtn").onclick = async () => {
+      if (myRole() !== "host") return;
+      const { data } = await db.from("rooms").update({
+        status: "waiting",
+        host_ready: false,
+        guest_ready: false,
+        battle_state: {},
+        updated_at: new Date().toISOString()
+      }).eq("id", room.id).select().single();
+      if (data) { room = data; renderRoom(); }
+    };
+
+    init();
+  </script>
+</body>
+</html>
