@@ -101,7 +101,7 @@ window.WANJIE_CHARACTERS = [
     move: 2,
     color: "#ffd54f",
     desc: "万界战力榜的神秘站长，双目可射出高能激光，更能直接调用底层代码与站长封禁权限控制对手！",
-    avatar: "assets/shenfeng.png",
+    avatar: "assets/20261127_18423676.png",
     fallbackAvatar: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='18' fill='%23121b26'/><circle cx='60' cy='46' r='20' fill='%23d7ccc8'/><path d='M32 104c4-24 52-24 56 0z' fill='%2337474f'/><rect x='42' y='40' width='14' height='8' rx='2' fill='%23ffffff'/><rect x='64' y='40' width='14' height='8' rx='2' fill='%23ffffff'/><path d='M88 22l10 60' stroke='%2380deea' stroke-width='5' stroke-linecap='round'/></svg>",
     skills: [
       {
