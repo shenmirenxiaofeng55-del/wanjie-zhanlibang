@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>2D 横版对战 · 万界战力榜</title>
   <style>
     * { box-sizing: border-box; }
@@ -12,11 +12,12 @@
     header p { color: #c4cbe0; margin: 4px 0 0; font-size: 13px; }
     nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; padding: 10px; background: #111a30; }
     nav a { color: #d9e4ff; text-decoration: none; }
-    main { max-width: 980px; margin: auto; padding: 12px; }
-    .card { padding: 16px; background: #121c32; border: 1px solid #293b60; border-radius: 16px; margin-bottom: 14px; }
+    main { max-width: 980px; margin: auto; padding: 10px; }
+    .card { padding: 14px; background: #121c32; border: 1px solid #293b60; border-radius: 16px; margin-bottom: 12px; }
     .card h2, .card h3 { color: #f5d889; margin-top: 0; }
-    .btn { padding: 10px 16px; border-radius: 10px; border: 0; background: #e5b84f; color: #171322; font-weight: bold; font-size: 14px; cursor: pointer; }
+    .btn { padding: 10px 18px; border-radius: 10px; border: 0; background: #e5b84f; color: #171322; font-weight: bold; font-size: 14px; cursor: pointer; }
     .btn.sub { background: transparent; color: #d9e4ff; border: 1px solid #334975; }
+    .btn.on { background: #e5b84f; color: #171322; border-color: #e5b84f; }
     .btn:disabled { opacity: .45; cursor: not-allowed; }
     input { padding: 10px 14px; border-radius: 10px; border: 1px solid #293b60; background: #0b1326; color: white; font-size: 15px; }
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -29,70 +30,75 @@
     .pick-card.on { border-color: #e5b84f; background: #18233f; }
     .pick-card img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: #080d1b; flex-shrink: 0; }
 
-    /* 血条 HUD */
+    /* 顶部血条 */
     .hud { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
-    .hp-box { background: #080d1b; border: 1px solid #2b3f66; border-radius: 12px; padding: 8px 10px; }
-    .hp-title { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+    .hp-box { background: #080d1b; border: 1px solid #2b3f66; border-radius: 12px; padding: 7px 10px; }
+    .hp-title { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
     .hp-bar { height: 11px; background: #1e2942; border-radius: 99px; overflow: hidden; }
-    .hp-fill { height: 100%; background: linear-gradient(90deg, #43c57b, #7fe0a8); transition: width .2s; }
+    .hp-fill { height: 100%; background: linear-gradient(90deg, #43c57b, #7fe0a8); transition: width .15s; }
     .hp-fill.low { background: linear-gradient(90deg, #ff5252, #ff8a80); }
-    .buffs { display: flex; flex-wrap: wrap; gap: 4px; min-height: 20px; margin-top: 5px; }
-    .buff { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #1b2847; color: #ffdf91; border: 1px solid #3c5385; }
+    .buffs { display: flex; flex-wrap: wrap; gap: 4px; min-height: 18px; margin-top: 4px; }
+    .buff { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #1b2847; color: #ffdf91; border: 1px solid #3c5385; }
     .buff.debuff { color: #ff9a9a; border-color: #8f3a4a; background: #2c131d; }
 
-    /* 16:9 2D 横版舞台 */
+    /* 16:9 横版舞台 */
     .stage {
-      position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 230px;
+      position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 220px;
       border-radius: 16px; border: 2px solid #334975; overflow: hidden;
       background-color: #0b1326; background-size: cover; background-position: center;
-      box-shadow: inset 0 -55px 70px rgba(0,0,0,.6);
+      box-shadow: inset 0 -45px 60px rgba(0,0,0,.55);
     }
     .stage.domain-on { border-color: #b388ff; box-shadow: inset 0 0 80px rgba(140,70,240,.75); }
     .stage.domain-on::after {
       content: ""; position: absolute; inset: 0; pointer-events: none;
       background: radial-gradient(circle, rgba(160,80,255,.15), rgba(45,10,80,.48));
     }
+    .combo-badge {
+      position: absolute; left: 14px; top: 12px; z-index: 15; display: none;
+      padding: 4px 12px; border-radius: 10px; background: rgba(229,184,79,.92);
+      color: #171322; font-weight: bold; font-size: 15px; font-style: italic;
+    }
 
-    /* 回合制地面 9 点位 */
+    /* 回合制站位轨道 */
     .ground-track {
       position: absolute; left: 5%; right: 5%; bottom: 7%; height: 28px;
       display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; z-index: 3;
     }
-    .slot { border-radius: 99px; border: 1px dashed rgba(255,255,255,.2); background: rgba(8,13,27,.35); }
+    .slot { border-radius: 99px; border: 1px dashed rgba(255,255,255,.22); background: rgba(8,13,27,.35); }
     .slot.walkable { background: rgba(127,224,168,.38); border: 2px solid #7fe0a8; cursor: pointer; }
 
     /* 角色实体 */
     .fighter {
-      position: absolute; bottom: 12%; width: 13%; max-width: 106px; min-width: 58px;
-      transform: translateX(-50%); z-index: 5; text-align: center; pointer-events: none;
-      transition: transform .25s ease;
+      position: absolute; width: 13%; max-width: 104px; min-width: 56px;
+      transform: translateX(-50%); text-align: center; pointer-events: none;
     }
-    .fighter.smooth { transition: left .36s ease, transform .25s ease; }
-    .fighter.big { filter: drop-shadow(0 0 14px rgba(255,120,60,.95)); }
+    .fighter.smooth { transition: left .35s ease, transform .25s ease; }
+    .fighter.big { filter: drop-shadow(0 0 16px rgba(255,110,60,.95)); }
+    .fighter.hit { filter: brightness(2) drop-shadow(0 0 12px #ff5252); }
     .fighter img {
       width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 14px;
-      border: 2px solid #7fe0a8; box-shadow: 0 8px 18px rgba(0,0,0,.7); background: rgba(10,16,32,.7);
+      border: 2px solid #7fe0a8; box-shadow: 0 8px 18px rgba(0,0,0,.75); background: rgba(10,16,32,.7);
     }
     .fighter.p2 img { border-color: #ff8a80; }
     .fighter .tag-name {
-      display: inline-block; margin-bottom: 3px; padding: 2px 7px; border-radius: 7px;
-      font-size: 11px; font-weight: bold; background: rgba(8,13,27,.82); color: #ffdf91; white-space: nowrap;
+      display: inline-block; margin-bottom: 3px; padding: 1px 7px; border-radius: 7px;
+      font-size: 11px; font-weight: bold; background: rgba(8,13,27,.84); color: #ffdf91; white-space: nowrap;
     }
     .onion-orbit {
-      position: absolute; top: -8px; right: -10px; font-size: 20px;
-      filter: drop-shadow(0 0 6px #7fe0a8); animation: spinOnion 1.2s linear infinite;
+      position: absolute; top: -10px; right: -10px; font-size: 20px;
+      animation: spinOnion 1s linear infinite;
     }
     @keyframes spinOnion { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
 
-    /* 2D 特效层 */
+    /* 2D 特效 & 飘字 */
     .fx-layer { position: absolute; inset: 0; pointer-events: none; z-index: 12; overflow: hidden; }
     .fx-laser { position: absolute; height: 14px; border-radius: 99px; transform: translateY(-50%); }
     .fx-laser.red { background: linear-gradient(90deg, #ff5252, #ff8a80); box-shadow: 0 0 20px #ff5252; }
     .fx-laser.gold { height: 22px; background: linear-gradient(90deg, #fff, #ffdf91, #80deea); box-shadow: 0 0 28px #ffdf91; }
-    .fx-zone { position: absolute; bottom: 8%; width: 24%; height: 42%; transform: translateX(-50%); border-radius: 50%; }
-    .fx-zone.ban { border: 3px solid #ff5252; background: radial-gradient(circle, rgba(255,82,82,.48), transparent); box-shadow: 0 0 26px #ff5252; }
-    .fx-zone.code { border: 3px solid #00e676; background: radial-gradient(circle, rgba(0,230,118,.35), transparent); box-shadow: 0 0 22px #00e676; }
-    .fx-zone.tentacle { border: 3px solid #f06292; background: radial-gradient(circle, rgba(240,98,146,.4), transparent); }
+    .fx-zone { position: absolute; width: 25%; height: 34%; transform: translateX(-50%); border-radius: 50%; }
+    .fx-zone.ban { border: 3px solid #ff5252; background: radial-gradient(circle, rgba(255,82,82,.5), transparent); box-shadow: 0 0 26px #ff5252; }
+    .fx-zone.code { border: 3px solid #00e676; background: radial-gradient(circle, rgba(0,230,118,.38), transparent); box-shadow: 0 0 22px #00e676; }
+    .fx-zone.tentacle { border: 3px solid #f06292; background: radial-gradient(circle, rgba(240,98,146,.42), transparent); }
     .fx-banner {
       position: absolute; left: 50%; top: 18%; transform: translateX(-50%);
       padding: 8px 18px; border-radius: 10px; font-weight: bold; font-size: 16px; white-space: nowrap;
@@ -100,39 +106,65 @@
     .fx-code { background: rgba(5,25,12,.92); color: #00e676; border: 2px solid #00e676; font-family: monospace; }
     .fx-ban { background: rgba(45,8,12,.94); color: #ff5252; border: 3px solid #ff5252; font-family: monospace; font-size: 19px; }
     .fx-ink { background: rgba(15,15,25,.92); color: #ce93d8; border: 2px solid #ab47bc; }
-    .fx-slash { position: absolute; font-size: 28px; transform: translate(-50%,-50%); }
-
-    /* 触屏自由移动控制器 + 技能区 */
-    .controls-wrap { display: flex; justify-content: space-between; align-items: stretch; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-    .move-pad { display: flex; gap: 8px; align-items: center; }
-    .pad-btn {
-      width: 60px; height: 56px; border-radius: 14px; border: 2px solid #3c5485;
-      background: #0b1326; color: #ffdf91; font-size: 18px; font-weight: bold;
-      touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer;
+    .dmg-pop {
+      position: absolute; font-weight: bold; font-size: 18px; color: #ffdf91;
+      text-shadow: 0 2px 6px #000; transform: translate(-50%,-50%);
+      animation: floatDmg .7s ease forwards;
     }
-    .pad-btn:active { background: #e5b84f; color: #171322; }
+    @keyframes floatDmg { 0%{opacity:1;margin-top:0} 100%{opacity:0;margin-top:-36px} }
 
-    .skills { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; }
-    .sk-btn {
-      position: relative; display: flex; gap: 8px; align-items: center; text-align: left;
-      padding: 8px; border-radius: 12px; background: #0b1326; border: 1px solid #2e436d;
-      color: white; cursor: pointer; touch-action: manipulation;
+    /* 实时横版左右手控制器 */
+    .action-pad {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; margin-top: 12px; padding: 10px; border-radius: 14px;
+      background: #0b1326; border: 1px solid #263659;
     }
-    .sk-btn:hover:not(:disabled) { border-color: #e5b84f; }
+    .dpad { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 44px); gap: 4px; }
+    .dpad button {
+      border-radius: 10px; border: 1px solid #3c5485; background: #14203d; color: #ffdf91;
+      font-size: 16px; font-weight: bold; touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer;
+    }
+    .dpad button:active { background: #e5b84f; color: #171322; }
+    .dpad .empty { visibility: hidden; }
+
+    .action-wheel { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .orb-btn {
+      position: relative; width: 62px; height: 62px; border-radius: 50%;
+      border: 2px solid #e5b84f; background: #162240; color: white;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; touch-action: manipulation; overflow: hidden; padding: 0;
+    }
+    .orb-btn.atk { width: 74px; height: 74px; background: linear-gradient(135deg, #e5b84f, #d98a2b); color: #171322; font-weight: bold; font-size: 15px; }
+    .orb-btn.dash { width: 54px; height: 54px; border-color: #7fe0a8; font-size: 12px; }
+    .orb-btn img { width: 100%; height: 100%; object-fit: cover; opacity: .85; }
+    .orb-btn .cd-mask {
+      position: absolute; inset: 0; background: rgba(8,13,27,.78);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 14px; color: #ffdf91;
+    }
+    .orb-btn .sk-lbl {
+      position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.72);
+      font-size: 9px; padding: 1px 0; text-align: center; color: #fff;
+    }
+    .orb-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* 回合制技能条 */
+    .skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+    .sk-btn { display: flex; gap: 8px; align-items: center; text-align: left; padding: 8px; border-radius: 12px; background: #0b1326; border: 1px solid #2e436d; color: white; cursor: pointer; }
     .sk-btn:disabled { opacity: .45; cursor: not-allowed; }
     .sk-btn img { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; }
     .sk-btn b { display: block; color: #f5d889; font-size: 12px; }
     .sk-btn span { font-size: 11px; color: #9db2d9; }
 
-    .logs { max-height: 120px; overflow-y: auto; background: #080d1b; border: 1px solid #233354; border-radius: 10px; padding: 8px 10px; margin-top: 10px; font-size: 12px; line-height: 1.6; color: #c5d1ea; }
+    .logs { max-height: 105px; overflow-y: auto; background: #080d1b; border: 1px solid #233354; border-radius: 10px; padding: 8px 10px; margin-top: 10px; font-size: 12px; line-height: 1.5; color: #c5d1ea; }
     .turn-tip { text-align: center; font-weight: bold; font-size: 14px; color: #ffdf91; margin-bottom: 8px; }
-    footer { text-align: center; padding: 18px; color: #8593ad; border-top: 1px solid #263451; margin-top: 20px; font-size: 13px; }
+    footer { text-align: center; padding: 16px; color: #8593ad; border-top: 1px solid #263451; margin-top: 18px; font-size: 12px; line-height: 1.7; }
   </style>
 </head>
 <body>
   <header>
-    <h1>万界战力榜 · 2D 横版对战</h1>
-    <p>实时自由移动格斗 & 回合制策略 · 4 张随机横版地图</p>
+    <h1>万界战力榜 · 2D 横版对决</h1>
+    <p>实时横版自由格斗 & 经典回合制 · 双模式支持联机</p>
   </header>
 
   <nav>
@@ -145,25 +177,21 @@
   <main>
     <!-- 大厅 -->
     <section id="lobby" class="card">
-      <h2>⚡ 玩法一：实时横版自由对战（推荐）</h2>
-      <p class="msg">自由跑跳、随时出招、按真实秒数冷却（支持触屏按键 & 键盘 A/D/W + J/K/L/U）</p>
-      <div class="row" style="margin-bottom:18px;">
-        <button id="rtAiBtn" class="btn" type="button">🔥 实时横版 · 人机对战</button>
-      </div>
-
-      <h2>♟️ 玩法二：经典回合制对战</h2>
-      <div class="row" style="margin-bottom:12px;">
-        <button id="tbAiBtn" class="btn sub" type="button">🤖 回合制 · 人机对战</button>
-        <button id="tbPvpBtn" class="btn sub" type="button">👥 回合制 · 本地双人</button>
-      </div>
-
-      <h3>🌐 回合制 · 联机房间（需登录）</h3>
+      <h2>🌐 联机房间对战（支持实时格斗 & 回合制）</h2>
+      <p class="msg">房主创建房间后，可在房间内自由切换「实时自由格斗」或「经典回合制」</p>
       <div class="row" style="margin-bottom:10px;">
         <button id="createBtn" class="btn" type="button">创建联机房间</button>
       </div>
-      <div class="row">
+      <div class="row" style="margin-bottom:18px;">
         <input id="joinCode" type="text" maxlength="6" placeholder="输入 6 位房间号" style="text-transform:uppercase;width:180px;">
         <button id="joinBtn" class="btn sub" type="button">加入房间</button>
+      </div>
+
+      <h2>🎮 本地单人 / 同屏试玩（无需登录）</h2>
+      <div class="row">
+        <button id="rtAiBtn" class="btn" type="button">🔥 实时横版自由格斗 (vs 电脑)</button>
+        <button id="tbAiBtn" class="btn sub" type="button">🤖 回合制 (vs 电脑)</button>
+        <button id="tbPvpBtn" class="btn sub" type="button">👥 回合制 (本地双人)</button>
       </div>
       <p id="lobbyMsg" class="msg"></p>
     </section>
@@ -177,6 +205,13 @@
           <button id="leaveBtn" class="btn sub" type="button">返回大厅</button>
         </div>
       </div>
+
+      <div id="onlineModeBox" class="row" style="margin:10px 0;display:none;">
+        <span class="msg">联机模式：</span>
+        <button id="modeRtBtn" class="btn sub" type="button">🔥 实时自由格斗</button>
+        <button id="modeTbBtn" class="btn sub" type="button">♟️ 经典回合制</button>
+      </div>
+
       <p class="msg" id="waitStatus"></p>
       <h3 id="pickTitle">选择出战角色</h3>
       <div id="charPick" class="char-pick"></div>
@@ -204,6 +239,7 @@
         </div>
 
         <div id="stage" class="stage">
+          <div id="comboBadge" class="combo-badge"></div>
           <div id="groundTrack" class="ground-track" style="display:none"></div>
           <div id="fHost" class="fighter">
             <span class="tag-name" id="hTag"></span>
@@ -216,19 +252,22 @@
           <div id="fxLayer" class="fx-layer"></div>
         </div>
 
+        <!-- 实时自由格斗控制器 -->
+        <div id="actionPad" class="action-pad" style="display:none;">
+          <div class="dpad">
+            <span class="empty"></span><button id="padUp" type="button">▲</button><span class="empty"></span>
+            <button id="padLeft" type="button">◀</button><span class="empty"></span><button id="padRight" type="button">▶</button>
+            <span class="empty"></span><button id="padDown" type="button">▼</button><span class="empty"></span>
+          </div>
+          <div id="rtActionWheel" class="action-wheel"></div>
+        </div>
+
+        <!-- 回合制控制器 -->
         <div id="tbHintRow" class="row" style="justify-content:space-between;margin-top:8px;display:none;">
           <span class="msg" id="moveTip"></span>
           <button id="endTurnBtn" class="btn sub" type="button">跳过回合</button>
         </div>
-
-        <div class="controls-wrap">
-          <div id="rtMovePad" class="move-pad" style="display:none;">
-            <button id="btnLeft" class="pad-btn" type="button">◀</button>
-            <button id="btnJump" class="pad-btn" type="button">▲跳</button>
-            <button id="btnRight" class="pad-btn" type="button">▶</button>
-          </div>
-          <div id="skillBar" class="skills"></div>
-        </div>
+        <div id="skillBar" class="skills" style="display:none;"></div>
 
         <div id="endBar" class="row" style="margin-top:12px;display:none;">
           <button id="rematchBtn" class="btn" type="button">再来一局</button>
@@ -240,7 +279,8 @@
   </main>
 
   <footer>
-    万界战力榜 · 私人测试版<br>
+    万界战力榜 · 免费私人测试版<br>
+    免责声明：本站完全免费开放测试，仅供个人娱乐与学习交流使用，无任何商业收费项目；页面内角色与图片素材如涉及版权问题，请联系站长及时删除。<br>
     © 2026 版权所有
   </footer>
 
@@ -264,8 +304,9 @@
 
     let me = null, mode = "rt_ai", room = null, channel = null, pollTimer = null, lastAnimKey = "";
     let localPick = { host: CHARS[0].id, guest: CHARS[3] ? CHARS[3].id : CHARS[1].id, step: "host" };
-    let rtState = null, rafId = null, lastTs = 0;
-    const keys = { left: false, right: false, jump: false };
+    let rtState = null, rafId = null, lastTs = 0, syncAcc = 0, guestInputAcc = 0;
+    const keys = { left: false, right: false, up: false, down: false };
+    const remoteKeys = { left: false, right: false, up: false, down: false };
 
     function el(tag, cls, text) {
       const e = document.createElement(tag);
@@ -283,17 +324,15 @@
       const { data: { user } } = await db.auth.getUser();
       if (user) { me = user; $("authLink").textContent = "我的账号"; }
       renderCharPick();
-      bindRealtimeControls();
+      bindRealtimePad();
     }
 
     function renderCharPick(selectedId) {
-      const box = $("charPick");
-      box.replaceChildren();
+      const box = $("charPick"); box.replaceChildren();
       CHARS.forEach(c => {
         const card = el("div", "pick-card" + (selectedId === c.id ? " on" : ""));
         card.dataset.cid = c.id;
-        const img = el("img");
-        img.src = c.avatar;
+        const img = el("img"); img.src = c.avatar;
         img.onerror = () => { if (c.fallbackAvatar) img.src = c.fallbackAvatar; };
         const txt = el("div");
         txt.append(el("b", "", c.name), el("div", "msg", c.title));
@@ -303,18 +342,15 @@
       });
     }
 
-    // 模式入口
     $("rtAiBtn").onclick = () => startSetup("rt_ai");
     $("tbAiBtn").onclick = () => startSetup("tb_ai");
     $("tbPvpBtn").onclick = () => startSetup("tb_pvp");
 
     function startSetup(m) {
-      mode = m;
-      localPick.step = "host";
-      $("lobby").style.display = "none";
-      $("waitRoom").style.display = "block";
-      $("copyCode").style.display = "none";
-      $("roomTitle").textContent = m === "rt_ai" ? "⚡ 实时横版 · 人机对战" : (m === "tb_ai" ? "♟️ 回合制 · 人机对战" : "♟️ 回合制 · 本地双人");
+      mode = m; localPick.step = "host";
+      $("lobby").style.display = "none"; $("waitRoom").style.display = "block";
+      $("copyCode").style.display = "none"; $("onlineModeBox").style.display = "none";
+      $("roomTitle").textContent = m === "rt_ai" ? "🔥 实时横版·自由格斗" : (m === "tb_ai" ? "♟️ 回合制·人机对战" : "♟️ 回合制·本地双人");
       $("pickTitle").textContent = "为 1P 选择角色";
       $("waitStatus").textContent = "1P：" + byId(localPick.host).name + "  |  2P：" + byId(localPick.guest).name;
       $("readyBtn").textContent = "下一步";
@@ -323,9 +359,10 @@
 
     $("createBtn").onclick = async () => {
       if (!me) { $("lobbyMsg").textContent = "请先登录后再创建联机房间"; $("lobbyMsg").className = "msg err"; return; }
-      mode = "online";
-      $("lobbyMsg").textContent = "正在创建房间…";
-      const { data, error } = await db.from("rooms").insert({ code: genCode(), host_id: me.id, host_char: CHARS[0].id }).select().single();
+      mode = "online"; $("lobbyMsg").textContent = "正在创建房间…";
+      const { data, error } = await db.from("rooms").insert({
+        code: genCode(), host_id: me.id, host_char: CHARS[0].id, battle_state: { mode: "rt" }
+      }).select().single();
       if (error) { $("lobbyMsg").textContent = "创建失败：" + error.message; $("lobbyMsg").className = "msg err"; return; }
       enterOnlineRoom(data);
     };
@@ -334,8 +371,7 @@
       if (!me) { $("lobbyMsg").textContent = "请先登录后再加入联机房间"; $("lobbyMsg").className = "msg err"; return; }
       const code = $("joinCode").value.trim().toUpperCase();
       if (!code) return;
-      mode = "online";
-      $("lobbyMsg").textContent = "正在加入…";
+      mode = "online"; $("lobbyMsg").textContent = "正在加入…";
       const { data: r, error } = await db.from("rooms").select("*").eq("code", code).maybeSingle();
       if (error || !r) { $("lobbyMsg").textContent = "找不到该房间号"; $("lobbyMsg").className = "msg err"; return; }
       if (r.host_id === me.id || r.guest_id === me.id) { enterOnlineRoom(r); return; }
@@ -348,44 +384,69 @@
     };
 
     async function enterOnlineRoom(r) {
-      room = r;
-      $("lobby").style.display = "none";
-      $("copyCode").style.display = "inline-block";
+      room = r; $("lobby").style.display = "none"; $("copyCode").style.display = "inline-block";
       if (channel) await db.removeChannel(channel);
-      channel = db.channel("room-" + r.id)
+      channel = db.channel("room-" + r.id, { config: { broadcast: { self: false } } })
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rooms", filter: "id=eq." + r.id }, payload => {
           room = payload.new; renderRoom();
-        }).subscribe();
+        })
+        .on("broadcast", { event: "rt_input" }, ({ payload }) => {
+          if (!rtState || !isRtHost()) return;
+          if (payload.type === "keys") Object.assign(remoteKeys, payload.keys);
+          else if (payload.type === "cast") rtCast("p2", payload.idx);
+          else if (payload.type === "dash") rtDash("p2");
+        })
+        .on("broadcast", { event: "rt_state" }, ({ payload }) => {
+          if (!rtState || isRtHost()) return;
+          rtState.p1 = payload.p1; rtState.p2 = payload.p2;
+          rtState.finished = payload.finished; rtState.combo = payload.combo;
+        })
+        .on("broadcast", { event: "rt_fx" }, ({ payload }) => {
+          if (!rtState || isRtHost()) return;
+          if (payload.fx) spawnFx(payload.fx, payload.fromX, payload.toX, payload.toBottom);
+          if (payload.dmg !== undefined) popDmg(payload.dmgX, payload.dmgB, payload.dmg);
+          if (payload.log) addLog(payload.log);
+        })
+        .subscribe();
+
       clearInterval(pollTimer);
       pollTimer = setInterval(async () => {
         if (!room || mode !== "online") return;
+        if (rtState && room.status === "fighting") return;
         const { data } = await db.from("rooms").select("*").eq("id", room.id).maybeSingle();
         if (data && data.updated_at !== room.updated_at) { room = data; renderRoom(); }
       }, 3000);
       renderRoom();
     }
 
+    function isRtHost() { return mode !== "online" || (room && me && room.host_id === me.id); }
+    function myRtRole() { return (mode === "online" && room && me && room.guest_id === me.id) ? "p2" : "p1"; }
+
+    $("modeRtBtn").onclick = () => switchOnlineMode("rt");
+    $("modeTbBtn").onclick = () => switchOnlineMode("tb");
+    async function switchOnlineMode(m) {
+      if (mode !== "online" || !room || room.host_id !== me.id || room.status !== "waiting") return;
+      const { data } = await db.from("rooms").update({
+        battle_state: { mode: m }, host_ready: false, guest_ready: false, updated_at: new Date().toISOString()
+      }).eq("id", room.id).select().single();
+      if (data) { room = data; renderRoom(); }
+    }
+
     $("copyCode").onclick = () => { if (room) navigator.clipboard?.writeText(room.code); $("waitStatus").textContent = "已复制房间号：" + room.code; };
-    $("leaveBtn").onclick = exitToLobby;
-    $("exitBattleBtn").onclick = exitToLobby;
+    $("leaveBtn").onclick = exitToLobby; $("exitBattleBtn").onclick = exitToLobby;
 
     async function exitToLobby() {
       cancelAnimationFrame(rafId); rafId = null; rtState = null;
       if (channel) await db.removeChannel(channel);
-      clearInterval(pollTimer);
-      room = null;
-      $("waitRoom").style.display = "none";
-      $("battleArea").style.display = "none";
-      $("lobby").style.display = "block";
-      $("lobbyMsg").textContent = "";
+      clearInterval(pollTimer); room = null;
+      $("waitRoom").style.display = "none"; $("battleArea").style.display = "none"; $("lobby").style.display = "block"; $("lobbyMsg").textContent = "";
     }
 
     async function pickChar(cid) {
       if (mode !== "online") {
         localPick[localPick.step] = cid;
         $("waitStatus").textContent = "1P：" + byId(localPick.host).name + "  |  2P：" + byId(localPick.guest).name;
-        renderCharPick(cid);
-        return;
+        renderCharPick(cid); return;
       }
       const role = room.host_id === me.id ? "host" : "guest";
       if (room.status !== "waiting") return;
@@ -399,14 +460,11 @@
         if (localPick.step === "host") {
           localPick.step = "guest";
           $("pickTitle").textContent = mode === "tb_pvp" ? "为 2P 选择角色" : "为 电脑(AI) 选择角色";
-          renderCharPick(localPick.guest);
-          $("readyBtn").textContent = "开始战斗！";
-          return;
+          renderCharPick(localPick.guest); $("readyBtn").textContent = "开始战斗！"; return;
         }
         if (mode === "rt_ai") {
-          $("waitRoom").style.display = "none";
-          $("battleArea").style.display = "block";
-          startRealtimeBattle();
+          $("waitRoom").style.display = "none"; $("battleArea").style.display = "block";
+          startRealtimeBattle(localPick.host, localPick.guest, Math.floor(Math.random() * BG_MAPS.length));
         } else {
           room = { status: "fighting", host_char: localPick.host, guest_char: localPick.guest, battle_state: createTbBattle(localPick.host, localPick.guest) };
           renderRoom();
@@ -416,10 +474,15 @@
       const role = room.host_id === me.id ? "host" : "guest";
       const nextReady = role === "host" ? !room.host_ready : !room.guest_ready;
       const otherReady = role === "host" ? room.guest_ready : room.host_ready;
+      const roomMode = (room.battle_state && room.battle_state.mode) || "rt";
       const patch = role === "host" ? { host_ready: nextReady, updated_at: new Date().toISOString() } : { guest_ready: nextReady, updated_at: new Date().toISOString() };
       if (nextReady && otherReady && room.guest_id) {
         patch.status = "fighting";
-        patch.battle_state = createTbBattle(room.host_char, room.guest_char);
+        if (roomMode === "rt") {
+          patch.battle_state = { mode: "rt", mapIdx: Math.floor(Math.random() * BG_MAPS.length), host_char: room.host_char, guest_char: room.guest_char };
+        } else {
+          patch.battle_state = createTbBattle(room.host_char, room.guest_char);
+        }
       }
       const { data } = await db.from("rooms").update(patch).eq("id", room.id).select().single();
       if (data) { room = data; renderRoom(); }
@@ -427,14 +490,12 @@
 
     /* ================= 公共 HUD & 特效 ================= */
     function renderHud(p, f, domainDebuff) {
-      $(p + "Name").textContent = f.name + (p === "h" ? " (1P)" : (mode.endsWith("_ai") ? " (AI)" : " (2P)"));
+      $(p + "Name").textContent = f.name + (p === "h" ? " (1P)" : (mode === "rt_ai" || mode === "tb_ai" ? " (AI)" : " (2P)"));
       $(p + "HpTxt").textContent = Math.max(0, Math.round(f.hp)) + " / " + f.max_hp;
       const pct = Math.max(0, Math.round((f.hp / f.max_hp) * 100));
-      $(p + "HpBar").style.width = pct + "%";
-      $(p + "HpBar").classList.toggle("low", pct <= 30);
+      $(p + "HpBar").style.width = pct + "%"; $(p + "HpBar").classList.toggle("low", pct <= 30);
 
-      const buffs = $(p + "Buffs");
-      buffs.replaceChildren();
+      const buffs = $(p + "Buffs"); buffs.replaceChildren();
       if (f.big) buffs.append(el("span", "buff", "🔥 巨化狂暴"));
       if (f.onion > 0) buffs.append(el("span", "buff", "🧅 强化大葱"));
       if ((f.empTimer || f.emp_atk) > 0) buffs.append(el("span", "buff", "⚡ 强化普攻"));
@@ -445,347 +506,377 @@
     }
 
     function addLog(text) {
-      const logs = $("logs");
-      logs.append(el("div", "", text));
-      while (logs.children.length > 16) logs.removeChild(logs.firstChild);
+      const logs = $("logs"); logs.append(el("div", "", text));
+      while (logs.children.length > 14) logs.removeChild(logs.firstChild);
       logs.scrollTop = logs.scrollHeight;
     }
 
-    function spawnFx(fx, fromPct, toPct) {
-      const layer = $("fxLayer");
-      if (!fx) return;
+    function popDmg(xPct, bottomPct, dmg) {
+      const d = el("div", "dmg-pop", "-" + dmg);
+      d.style.left = xPct + "%"; d.style.bottom = (bottomPct + 18) + "%";
+      $("fxLayer").append(d); setTimeout(() => d.remove(), 700);
+    }
+
+    function spawnFx(fx, fromPct, toPct, toBottomPct = 10) {
+      const layer = $("fxLayer"); if (!fx) return;
       if (fx === "laser_red" || fx === "laser_gold") {
         const l = el("div", "fx-laser " + (fx === "laser_red" ? "red" : "gold"));
         const lx = Math.min(fromPct, toPct), rx = Math.max(fromPct, toPct);
-        l.style.left = lx + "%"; l.style.top = "62%"; l.style.width = Math.max(12, rx - lx) + "%";
-        layer.append(l);
-        setTimeout(() => l.remove(), 450);
+        l.style.left = lx + "%"; l.style.bottom = (toBottomPct + 12) + "%"; l.style.width = Math.max(14, rx - lx) + "%";
+        layer.append(l); setTimeout(() => l.remove(), 420);
       } else if (fx === "code" || fx === "ban" || fx === "tentacle") {
-        const z = el("div", "fx-zone " + fx); z.style.left = toPct + "%";
-        layer.append(z);
-        setTimeout(() => z.remove(), 950);
-        if (fx === "code") { const b = el("div", "fx-banner fx-code", "<SYSTEM.LOCK() /> 代码禁锢！"); layer.append(b); setTimeout(() => b.remove(), 1000); }
-        if (fx === "ban") { const b = el("div", "fx-banner fx-ban", "🚫 [ BANNED · 站长权限封禁 ]"); layer.append(b); setTimeout(() => b.remove(), 1100); }
+        const z = el("div", "fx-zone " + fx); z.style.left = toPct + "%"; z.style.bottom = (toBottomPct - 2) + "%";
+        layer.append(z); setTimeout(() => z.remove(), 950);
+        if (fx === "code") { const b = el("div", "fx-banner fx-code", "<SYSTEM.LOCK() /> 代码控制！"); layer.append(b); setTimeout(() => b.remove(), 950); }
+        if (fx === "ban") { const b = el("div", "fx-banner fx-ban", "🚫 [ BANNED · 权限封禁 ]"); layer.append(b); setTimeout(() => b.remove(), 1100); }
       } else if (fx === "ink_black" || fx === "cthulhu") {
-        const b = el("div", "fx-banner fx-ink", fx === "cthulhu" ? "🐙 克苏鲁精神污染！" : "🖤 深海黑墨致盲！");
-        layer.append(b); setTimeout(() => b.remove(), 1000);
-      } else if (fx === "slash") {
-        const s = el("div", "fx-slash", "⚔️"); s.style.left = toPct + "%"; s.style.top = "60%";
-        layer.append(s); setTimeout(() => s.remove(), 350);
+        const b = el("div", "fx-banner fx-ink", fx === "cthulhu" ? "🐙 克苏鲁精神污染！" : "🖤 深海黑墨！");
+        layer.append(b); setTimeout(() => b.remove(), 950);
       }
     }
 
-    /* ================= 玩法一：实时横版自由对战 ================= */
-    function bindRealtimeControls() {
-      const hold = (id, key) => {
+    function broadcastFx(payload) {
+      if (mode === "online" && channel && isRtHost()) {
+        channel.send({ type: "broadcast", event: "rt_fx", payload });
+      }
+    }
+
+    /* ================= 模式一：实时横版自由格斗（支持联机） ================= */
+    function bindRealtimePad() {
+      const hold = (id, k) => {
         const b = $(id);
-        b.onpointerdown = e => { e.preventDefault(); keys[key] = true; };
-        b.onpointerup = b.onpointercancel = b.onpointerleave = () => { keys[key] = false; };
+        b.onpointerdown = e => { e.preventDefault(); keys[k] = true; };
+        b.onpointerup = b.onpointercancel = b.onpointerleave = () => { keys[k] = false; };
       };
-      hold("btnLeft", "left"); hold("btnRight", "right"); hold("btnJump", "jump");
+      hold("padLeft", "left"); hold("padRight", "right"); hold("padUp", "up"); hold("padDown", "down");
 
       window.addEventListener("keydown", e => {
-        if (mode !== "rt_ai" || !rtState || rtState.finished) return;
+        if (!rtState || rtState.finished) return;
         const k = e.key.toLowerCase();
         if (k === "a" || e.key === "ArrowLeft") keys.left = true;
         if (k === "d" || e.key === "ArrowRight") keys.right = true;
-        if (k === "w" || e.key === "ArrowUp") keys.jump = true;
-        if (k === "j") rtCast("p1", -1);
-        if (k === "u") rtCast("p1", 0);
-        if (k === "k") rtCast("p1", 1);
-        if (k === "l") rtCast("p1", 2);
+        if (k === "w" || e.key === "ArrowUp") keys.up = true;
+        if (k === "s" || e.key === "ArrowDown") keys.down = true;
+        if (k === "j") triggerRtCast(-1);
+        if (k === "u") triggerRtCast(0);
+        if (k === "k") triggerRtCast(1);
+        if (k === "l") triggerRtCast(2);
+        if (k === " ") triggerRtDash();
       });
       window.addEventListener("keyup", e => {
         const k = e.key.toLowerCase();
         if (k === "a" || e.key === "ArrowLeft") keys.left = false;
         if (k === "d" || e.key === "ArrowRight") keys.right = false;
-        if (k === "w" || e.key === "ArrowUp") keys.jump = false;
+        if (k === "w" || e.key === "ArrowUp") keys.up = false;
+        if (k === "s" || e.key === "ArrowDown") keys.down = false;
       });
     }
 
-    function mkRtUnit(cid, x, dir) {
-      const c = byId(cid);
-      return { cid: c.id, name: c.name, hp: c.hp, max_hp: c.hp, atk: c.atk, def: c.def, spd: c.spd, x, y: 0, vy: 0, dir, cds: [0, 0, 0, 0], onion: 0, empTimer: 0, big: false, domainTimer: 0, slowTimer: 0, stunTimer: 0, aiThink: 0.4 };
+    function triggerRtCast(idx) {
+      if (myRtRole() === "p1") rtCast("p1", idx);
+      else if (channel) channel.send({ type: "broadcast", event: "rt_input", payload: { type: "cast", idx } });
+    }
+    function triggerRtDash() {
+      if (myRtRole() === "p1") rtDash("p1");
+      else if (channel) channel.send({ type: "broadcast", event: "rt_input", payload: { type: "dash" } });
     }
 
-    function startRealtimeBattle() {
+    function mkRtUnit(cid, x, z, dir) {
+      const c = byId(cid);
+      return { cid: c.id, name: c.name, hp: c.hp, max_hp: c.hp, atk: c.atk, def: c.def, x, z, vx: 0, dir, cds: [0,0,0,0], dashCd: 0, onion: 0, empTimer: 0, big: false, domainTimer: 0, slowTimer: 0, stunTimer: 0, hitFlash: 0, aiThink: 0.35 };
+    }
+
+    function startRealtimeBattle(hCid, gCid, mapIdx) {
       cancelAnimationFrame(rafId);
-      const mapIdx = Math.floor(Math.random() * BG_MAPS.length);
-      const m = BG_MAPS[mapIdx];
+      const m = BG_MAPS[mapIdx || 0] || BG_MAPS[0];
       $("stage").style.backgroundImage = "url('" + m.img + "')";
-      $("groundTrack").style.display = "none";
-      $("tbHintRow").style.display = "none";
-      $("rtMovePad").style.display = "flex";
-      $("endBar").style.display = "none";
-      $("fxLayer").replaceChildren();
-      $("logs").replaceChildren();
+      $("groundTrack").style.display = "none"; $("tbHintRow").style.display = "none"; $("skillBar").style.display = "none";
+      $("actionPad").style.display = "flex"; $("endBar").style.display = "none";
+      $("fxLayer").replaceChildren(); $("logs").replaceChildren();
 
-      rtState = { map: m, p1: mkRtUnit(localPick.host, 18, 1), p2: mkRtUnit(localPick.guest, 82, -1), finished: false, dotTick: 0 };
-      $("fHost").classList.remove("smooth");
-      $("fGuest").classList.remove("smooth");
-      $("hImg").src = byId(rtState.p1.cid).avatar;
-      $("hImg").onerror = () => { if (byId(rtState.p1.cid).fallbackAvatar) $("hImg").src = byId(rtState.p1.cid).fallbackAvatar; };
-      $("gImg").src = byId(rtState.p2.cid).avatar;
-      $("gImg").onerror = () => { if (byId(rtState.p2.cid).fallbackAvatar) $("gImg").src = byId(rtState.p2.cid).fallbackAvatar; };
-      $("hTag").textContent = rtState.p1.name;
-      $("gTag").textContent = rtState.p2.name;
+      rtState = { map: m, p1: mkRtUnit(hCid, 20, 45, 1), p2: mkRtUnit(gCid, 80, 45, -1), combo: 0, comboTimer: 0, finished: false, dotTick: 0 };
+      $("fHost").classList.remove("smooth"); $("fGuest").classList.remove("smooth");
+      const c1 = byId(hCid), c2 = byId(gCid);
+      $("hImg").src = c1.avatar; $("hImg").onerror = () => { if (c1.fallbackAvatar) $("hImg").src = c1.fallbackAvatar; };
+      $("gImg").src = c2.avatar; $("gImg").onerror = () => { if (c2.fallbackAvatar) $("gImg").src = c2.fallbackAvatar; };
+      $("hTag").textContent = rtState.p1.name; $("gTag").textContent = rtState.p2.name;
 
-      addLog("⚡ 实时横版开始！地图【" + m.name + "】自由跑跳出招！");
-      buildRtSkillButtons();
+      addLog("🔥 实时横版自由格斗开始！地图【" + m.name + "】");
+      buildActionWheel();
       lastTs = performance.now();
       rafId = requestAnimationFrame(rtLoop);
     }
 
-    function buildRtSkillButtons() {
-      const bar = $("skillBar");
-      bar.replaceChildren();
-      const c = byId(rtState.p1.cid);
-      const makeBtn = (idx, title, sub, icon) => {
-        const b = el("button", "sk-btn"); b.type = "button"; b.id = "rtSk_" + idx;
-        const im = el("img"); im.src = icon;
-        const tx = el("div"); tx.append(el("b", "", title), el("span", "cd-txt", sub));
-        b.append(im, tx);
-        b.onclick = () => rtCast("p1", idx);
-        bar.append(b);
-      };
-      makeBtn(-1, "普通攻击(J)", "0.7s", c.skills[0].icon);
-      c.skills.forEach((sk, i) => makeBtn(i, sk.name + "(" + ["U","K","L"][i] + ")", "就绪", sk.icon));
+    function buildActionWheel() {
+      const wheel = $("rtActionWheel"); wheel.replaceChildren();
+      const myU = rtState[myRtRole()];
+      const c = byId(myU.cid);
+
+      const dashB = el("button", "orb-btn dash", "瞬身"); dashB.type = "button"; dashB.id = "orbDash";
+      dashB.onclick = triggerRtDash;
+      wheel.append(dashB);
+
+      c.skills.forEach((sk, i) => {
+        const b = el("button", "orb-btn"); b.type = "button"; b.id = "orbSk_" + i;
+        const im = el("img"); im.src = sk.icon;
+        const lbl = el("span", "sk-lbl", sk.name.slice(0, 4));
+        const mask = el("div", "cd-mask"); mask.style.display = "none";
+        b.append(im, lbl, mask);
+        b.onclick = () => triggerRtCast(i);
+        wheel.append(b);
+      });
+
+      const atkB = el("button", "orb-btn atk", "普攻"); atkB.type = "button"; atkB.id = "orbAtk";
+      atkB.onclick = () => triggerRtCast(-1);
+      wheel.append(atkB);
+    }
+
+    function rtDash(who) {
+      if (!rtState || rtState.finished) return;
+      const u = rtState[who];
+      if (u.stunTimer > 0 || u.dashCd > 0) return;
+      u.dashCd = 3.5; u.x = Math.max(6, Math.min(94, u.x + u.dir * 22));
+      addLog(u.name + " 发动瞬身闪避！");
+      broadcastFx({ log: u.name + " 发动瞬身闪避！" });
     }
 
     function rtLoop(now) {
       if (!rtState) return;
       const dt = Math.min(0.05, (now - lastTs) / 1000);
       lastTs = now;
-
       const { p1, p2 } = rtState;
-      [p1, p2].forEach(u => {
-        for (let i = 0; i < 4; i++) u.cds[i] = Math.max(0, u.cds[i] - dt);
-        if (u.empTimer > 0) u.empTimer = Math.max(0, u.empTimer - dt);
-        if (u.domainTimer > 0) u.domainTimer = Math.max(0, u.domainTimer - dt);
-        if (u.slowTimer > 0) u.slowTimer = Math.max(0, u.slowTimer - dt);
-        if (u.stunTimer > 0) u.stunTimer = Math.max(0, u.stunTimer - dt);
-        if (u.y > 0 || u.vy !== 0) {
-          u.y += u.vy * dt; u.vy -= 620 * dt;
-          if (u.y <= 0) { u.y = 0; u.vy = 0; }
-        }
-      });
 
-      if (!rtState.finished) {
-        // P1 自由移动
-        if (p1.stunTimer <= 0) {
-          const spd = (26 + (p1.domainTimer > 0 ? 18 : 0)) * (p1.slowTimer > 0 ? 0.55 : 1);
-          if (keys.left) { p1.x -= spd * dt; p1.dir = -1; }
-          if (keys.right) { p1.x += spd * dt; p1.dir = 1; }
-          if (keys.jump && p1.y === 0) p1.vy = 250;
-          p1.x = Math.max(6, Math.min(94, p1.x));
-        }
-        // AI 自由走位与出招
-        if (p2.stunTimer <= 0) {
-          const spd2 = (22 + (p2.domainTimer > 0 ? 16 : 0)) * (p2.slowTimer > 0 ? 0.55 : 1);
-          const dx = p1.x - p2.x;
-          p2.dir = dx >= 0 ? 1 : -1;
-          if (Math.abs(dx) > 22) p2.x += p2.dir * spd2 * dt;
-          p2.x = Math.max(6, Math.min(94, p2.x));
-          p2.aiThink -= dt;
-          if (p2.aiThink <= 0) {
-            p2.aiThink = 0.65;
-            const d = Math.abs(p1.x - p2.x);
-            const c2 = byId(p2.cid);
-            const idx = c2.skills.findIndex((s, i) => p2.cds[i + 1] <= 0 && d <= s.range * 14);
-            if (idx !== -1) rtCast("p2", idx);
-            else if (d <= 24 && p2.cds[0] <= 0) rtCast("p2", -1);
+      if (isRtHost()) {
+        [p1, p2].forEach(u => {
+          for (let i = 0; i < 4; i++) u.cds[i] = Math.max(0, u.cds[i] - dt);
+          u.dashCd = Math.max(0, u.dashCd - dt);
+          if (u.empTimer > 0) u.empTimer = Math.max(0, u.empTimer - dt);
+          if (u.domainTimer > 0) u.domainTimer = Math.max(0, u.domainTimer - dt);
+          if (u.slowTimer > 0) u.slowTimer = Math.max(0, u.slowTimer - dt);
+          if (u.stunTimer > 0) u.stunTimer = Math.max(0, u.stunTimer - dt);
+          if (u.hitFlash > 0) u.hitFlash = Math.max(0, u.hitFlash - dt);
+          if (Math.abs(u.vx) > 0.5) { u.x = Math.max(6, Math.min(94, u.x + u.vx * dt)); u.vx *= 0.85; }
+          else u.vx = 0;
+        });
+
+        if (rtState.comboTimer > 0) { rtState.comboTimer -= dt; if (rtState.comboTimer <= 0) rtState.combo = 0; }
+
+        if (!rtState.finished) {
+          if (p1.stunTimer <= 0) {
+            const spd = (30 + (p1.domainTimer > 0 ? 18 : 0)) * (p1.slowTimer > 0 ? 0.55 : 1);
+            if (keys.left) { p1.x -= spd * dt; p1.dir = -1; }
+            if (keys.right) { p1.x += spd * dt; p1.dir = 1; }
+            if (keys.up) p1.z = Math.min(100, p1.z + 65 * dt);
+            if (keys.down) p1.z = Math.max(0, p1.z - 65 * dt);
+            p1.x = Math.max(6, Math.min(94, p1.x));
+          }
+
+          if (mode === "online") {
+            if (p2.stunTimer <= 0) {
+              const spd2 = (30 + (p2.domainTimer > 0 ? 18 : 0)) * (p2.slowTimer > 0 ? 0.55 : 1);
+              if (remoteKeys.left) { p2.x -= spd2 * dt; p2.dir = -1; }
+              if (remoteKeys.right) { p2.x += spd2 * dt; p2.dir = 1; }
+              if (remoteKeys.up) p2.z = Math.min(100, p2.z + 65 * dt);
+              if (remoteKeys.down) p2.z = Math.max(0, p2.z - 65 * dt);
+              p2.x = Math.max(6, Math.min(94, p2.x));
+            }
+          } else if (p2.stunTimer <= 0) {
+            const spd2 = (22 + (p2.domainTimer > 0 ? 16 : 0)) * (p2.slowTimer > 0 ? 0.55 : 1);
+            const dx = p1.x - p2.x, dz = p1.z - p2.z;
+            p2.dir = dx >= 0 ? 1 : -1;
+            if (Math.abs(dx) > 16) p2.x += p2.dir * spd2 * dt;
+            if (Math.abs(dz) > 12) p2.z += Math.sign(dz) * 45 * dt;
+            p2.x = Math.max(6, Math.min(94, p2.x)); p2.z = Math.max(0, Math.min(100, p2.z));
+            p2.aiThink -= dt;
+            if (p2.aiThink <= 0) {
+              p2.aiThink = 0.6;
+              const d = Math.abs(dx), c2 = byId(p2.cid);
+              const idx = c2.skills.findIndex((s, i) => p2.cds[i + 1] <= 0 && d <= s.range * 14 && Math.abs(dz) <= 45);
+              if (idx !== -1) rtCast("p2", idx);
+              else if (d <= 20 && Math.abs(dz) <= 35 && p2.cds[0] <= 0) rtCast("p2", -1);
+            }
+          }
+
+          rtState.dotTick += dt;
+          if (rtState.dotTick >= 1) {
+            rtState.dotTick = 0;
+            if (p1.domainTimer > 0) p2.hp = Math.max(0, p2.hp - 25);
+            if (p2.domainTimer > 0) p1.hp = Math.max(0, p1.hp - 25);
+          }
+
+          if (p1.hp <= 0 || p2.hp <= 0) {
+            rtState.finished = true;
+            const win = p1.hp > 0 ? p1.name : p2.name;
+            addLog("🏆 " + win + " KO 对手获胜！");
+            broadcastFx({ log: "🏆 " + win + " KO 对手获胜！" });
+            if (mode === "online" && room) {
+              db.from("rooms").update({ status: "finished", updated_at: new Date().toISOString() }).eq("id", room.id).then(() => {});
+            }
           }
         }
-        // 领域持续扣血
-        rtState.dotTick += dt;
-        if (rtState.dotTick >= 1) {
-          rtState.dotTick = 0;
-          if (p1.domainTimer > 0) p2.hp = Math.max(0, p2.hp - 25);
-          if (p2.domainTimer > 0) p1.hp = Math.max(0, p1.hp - 25);
+
+        if (mode === "online" && channel) {
+          syncAcc += dt;
+          if (syncAcc >= 0.05) {
+            syncAcc = 0;
+            channel.send({ type: "broadcast", event: "rt_state", payload: { p1, p2, finished: rtState.finished, combo: rtState.combo } });
+          }
         }
-        if (p1.hp <= 0 || p2.hp <= 0) {
-          rtState.finished = true;
-          const win = p1.hp > 0 ? p1.name : p2.name;
-          addLog("🏆 " + win + " 赢得实时对决！");
-          $("turnTip").textContent = "🏆 对决结束！" + win + " 获胜！";
-          $("endBar").style.display = "flex";
-          $("rematchBtn").style.display = "inline-block";
+      } else {
+        guestInputAcc += dt;
+        if (guestInputAcc >= 0.05 && channel) {
+          guestInputAcc = 0;
+          channel.send({ type: "broadcast", event: "rt_input", payload: { type: "keys", keys } });
         }
       }
 
-      // 更新舞台画面
       $("stage").classList.toggle("domain-on", p1.domainTimer > 0 || p2.domainTimer > 0);
-      renderHud("h", p1, p2.domainTimer > 0);
-      renderHud("g", p2, p1.domainTimer > 0);
+      $("comboBadge").style.display = rtState.combo >= 2 ? "block" : "none";
+      $("comboBadge").textContent = rtState.combo + " 连击 COMBO!";
+      renderHud("h", p1, p2.domainTimer > 0); renderHud("g", p2, p1.domainTimer > 0);
 
       [["fHost", p1], ["fGuest", p2]].forEach(([id, u]) => {
         const elU = $(id);
-        elU.style.left = u.x + "%";
-        elU.style.bottom = (12 + u.y * 0.28) + "%";
-        elU.style.transform = "translateX(-50%) scale(" + (u.big ? 1.32 : 1) + ")";
+        elU.style.left = u.x + "%"; elU.style.bottom = (6 + u.z * 0.22) + "%";
+        elU.style.zIndex = Math.round(100 - u.z);
+        elU.style.transform = "translateX(-50%) scale(" + (u.big ? 1.34 : 1) + ")";
         elU.querySelector("img").style.transform = "scaleX(" + u.dir + ")";
-        elU.classList.toggle("big", u.big);
+        elU.classList.toggle("big", u.big); elU.classList.toggle("hit", u.hitFlash > 0);
         let orb = elU.querySelector(".onion-orbit");
-        if (u.onion > 0 && !orb) { elU.append(el("span", "onion-orbit", "🧅")); }
-        else if (u.onion <= 0 && orb) { orb.remove(); }
+        if (u.onion > 0 && !orb) elU.append(el("span", "onion-orbit", "🧅"));
+        else if (u.onion <= 0 && orb) orb.remove();
       });
 
-      if (!rtState.finished) {
-        $("turnTip").textContent = "⚡ 实时横版【" + rtState.map.name + "】· 距离 " + Math.round(Math.abs(p1.x - p2.x)) + "%";
+      if (rtState.finished) {
+        const win = p1.hp > 0 ? p1.name : p2.name;
+        $("turnTip").textContent = "🏆 KO！" + win + " 获胜！";
+        $("endBar").style.display = "flex";
+        $("rematchBtn").style.display = isRtHost() ? "inline-block" : "none";
+      } else {
+        $("turnTip").textContent = "🔥 实时自由格斗【" + rtState.map.name + "】· 随时跑位连招！";
       }
 
-      // 更新冷却按钮文字
-      const bBasic = $("rtSk_-1");
-      if (bBasic) {
-        bBasic.disabled = rtState.finished || p1.stunTimer > 0 || p1.cds[0] > 0;
-        bBasic.querySelector(".cd-txt").textContent = p1.cds[0] > 0 ? p1.cds[0].toFixed(1) + "s" : (p1.empTimer > 0 ? "强化中!" : "可用");
-      }
-      byId(p1.cid).skills.forEach((sk, i) => {
-        const b = $("rtSk_" + i);
-        if (!b) return;
-        const cd = p1.cds[i + 1];
-        b.disabled = rtState.finished || p1.stunTimer > 0 || cd > 0;
-        const title = (i === 2 && p1.cid === "tuanzi" && p1.big) ? "狂暴位移(L)" : sk.name;
-        b.querySelector("b").textContent = title;
-        b.querySelector(".cd-txt").textContent = cd > 0 ? cd.toFixed(1) + "s" : "就绪";
+      const myU = rtState[myRtRole()];
+      const dBtn = $("orbDash");
+      if (dBtn) { dBtn.disabled = rtState.finished || myU.stunTimer > 0 || myU.dashCd > 0; dBtn.textContent = myU.dashCd > 0 ? myU.dashCd.toFixed(1) : "瞬身"; }
+      const aBtn = $("orbAtk");
+      if (aBtn) { aBtn.disabled = rtState.finished || myU.stunTimer > 0 || myU.cds[0] > 0; aBtn.textContent = myU.empTimer > 0 ? "强攻!" : "普攻"; }
+      byId(myU.cid).skills.forEach((sk, i) => {
+        const b = $("orbSk_" + i); if (!b) return;
+        const cd = myU.cds[i + 1];
+        b.disabled = rtState.finished || myU.stunTimer > 0 || cd > 0;
+        const m = b.querySelector(".cd-mask"); m.style.display = cd > 0 ? "flex" : "none"; m.textContent = cd.toFixed(1);
       });
 
       rafId = requestAnimationFrame(rtLoop);
     }
 
     function rtCast(who, idx) {
-      if (!rtState || rtState.finished) return;
+      if (!rtState || rtState.finished || !isRtHost()) return;
       const u = rtState[who], opp = rtState[who === "p1" ? "p2" : "p1"];
-      if (u.stunTimer > 0) return;
-      const cdSlot = idx + 1;
-      if (u.cds[cdSlot] > 0) return;
-      const distPct = Math.abs(u.x - opp.x);
+      if (u.stunTimer > 0 || u.cds[idx + 1] > 0) return;
+      const dx = Math.abs(u.x - opp.x), dz = Math.abs(u.z - opp.z);
       u.dir = opp.x >= u.x ? 1 : -1;
+      const oppBottom = 6 + opp.z * 0.22;
+
+      const hitTarget = (dmg, knock = 18) => {
+        opp.hp = Math.max(0, opp.hp - dmg); opp.hitFlash = 0.22; opp.vx = u.dir * knock;
+        popDmg(opp.x, oppBottom, dmg); broadcastFx({ dmg, dmgX: opp.x, dmgB: oppBottom });
+        if (who === "p1") { rtState.combo++; rtState.comboTimer = 2.5; }
+        if (u.onion > 0) {
+          u.onion = 0; const ex = Math.round(u.atk * 0.55); opp.hp = Math.max(0, opp.hp - ex);
+          popDmg(opp.x, oppBottom + 8, ex); addLog("🧅 环绕大葱追击 -" + ex);
+          broadcastFx({ dmg: ex, dmgX: opp.x, dmgB: oppBottom + 8, log: "🧅 环绕大葱追击 -" + ex });
+        }
+      };
 
       if (idx === -1) {
-        u.cds[0] = 0.7;
-        if (distPct > 25) { spawnFx("slash", u.x, u.x + u.dir * 12); return; }
-        const dmg = Math.round(u.atk * (u.empTimer > 0 ? 1.35 : 0.85) - opp.def * 0.4);
-        opp.hp = Math.max(0, opp.hp - dmg);
-        spawnFx("slash", u.x, opp.x);
-        addLog(u.name + (u.empTimer > 0 ? " 强化普攻" : " 普攻") + "命中 -" + dmg);
-        if (u.onion > 0) {
-          u.onion = 0;
-          const ex = Math.round(u.atk * 0.55);
-          opp.hp = Math.max(0, opp.hp - ex);
-          addLog("🧅 环绕大葱自动追击 -" + ex + "！");
-        }
+        u.cds[0] = 0.45; u.vx = u.dir * 22;
+        if (dx <= 22 && dz <= 36) hitTarget(Math.round(u.atk * (u.empTimer > 0 ? 1.35 : 0.78) - opp.def * 0.35), 16);
         return;
       }
 
       const sk = byId(u.cid).skills[idx];
-      u.cds[cdSlot] = sk.cd * 1.8 + 1.2;
-      const maxRangePct = sk.range * 14;
+      u.cds[idx + 1] = sk.cd * 1.6 + 1.0;
 
       if (sk.type === "dash_onion") {
-        u.x = Math.max(6, Math.min(94, u.x + u.dir * 22));
-        u.onion = 1;
-        if (Math.abs(u.x - opp.x) <= 26) {
-          const dmg = Math.round(u.atk * sk.power - opp.def * 0.4);
-          opp.hp = Math.max(0, opp.hp - dmg);
-          addLog(u.name + " 大葱突进命中 -" + dmg + "，获得环绕大葱！");
-        } else addLog(u.name + " 大葱突进位移，获得环绕大葱！");
+        u.vx = u.dir * 95; u.onion = 1;
+        if (dx <= 36 && dz <= 42) hitTarget(Math.round(u.atk * sk.power), 32);
+        addLog(u.name + " 大葱突进！"); broadcastFx({ log: u.name + " 大葱突进！" });
       } else if (sk.type === "charge_buff") {
         u.empTimer = 2.0;
-        if (distPct <= 28) {
-          const dmg = Math.round(u.atk * sk.power - opp.def * 0.4);
-          opp.hp = Math.max(0, opp.hp - dmg);
-          spawnFx("slash", u.x, opp.x);
-          addLog(u.name + " 蓄力重击 -" + dmg + "，获得 2 秒强化普攻！");
-        } else addLog(u.name + " 蓄力完成，获得 2 秒强化普攻！");
+        if (dx <= 28 && dz <= 40) hitTarget(Math.round(u.atk * sk.power), 40);
+        addLog(u.name + " 蓄力重击，获得 2 秒强化普攻！"); broadcastFx({ log: u.name + " 蓄力重击，获得 2 秒强化普攻！" });
       } else if (sk.type === "milk_rage") {
-        if (!u.big) {
-          u.big = true; u.atk = Math.round(u.atk * 1.3); u.cds[cdSlot] = 2.5;
-          addLog(u.name + " 喝下牛奶体型变大进入狂暴模式！");
-        } else {
-          u.x = Math.max(6, Math.min(94, u.x + u.dir * 30));
-          u.cds[cdSlot] = 3.0;
-          if (Math.abs(u.x - opp.x) <= 28) {
-            const dmg = Math.round(u.atk * sk.power - opp.def * 0.4);
-            opp.hp = Math.max(0, opp.hp - dmg);
-            addLog(u.name + " 狂暴位移突袭命中 -" + dmg + "！");
-          }
-        }
+        if (!u.big) { u.big = true; u.atk = Math.round(u.atk * 1.3); u.cds[idx + 1] = 2.0; addLog(u.name + " 喝下牛奶体型变大狂暴！"); broadcastFx({ log: u.name + " 喝下牛奶体型变大狂暴！" }); }
+        else { u.vx = u.dir * 120; u.cds[idx + 1] = 2.8; if (dx <= 38 && dz <= 45) hitTarget(Math.round(u.atk * sk.power), 38); }
       } else if (sk.type === "domain_cc") {
         const cost = Math.max(1, Math.floor(u.hp * 0.28));
-        u.hp = Math.max(1, u.hp - cost);
-        u.domainTimer = 7.0;
-        opp.stunTimer = 2.2;
-        const dmg = Math.round(u.atk * sk.power);
-        opp.hp = Math.max(0, opp.hp - dmg);
-        addLog(u.name + " 领域展开！自损 " + cost + " 血，移速大增并强制控制敌人 2.2 秒！");
+        u.hp = Math.max(1, u.hp - cost); u.domainTimer = 7.0; opp.stunTimer = 2.2;
+        hitTarget(Math.round(u.atk * sk.power), 10);
+        addLog(u.name + " 领域展开！自损 " + cost + " 血强控对手！"); broadcastFx({ log: u.name + " 领域展开！自损 " + cost + " 血强控对手！" });
       } else if (sk.type === "cthulhu_ult") {
-        u.big = true; u.atk = Math.round(u.atk * 1.25);
-        opp.stunTimer = 2.2;
-        const dmg = Math.round(u.atk * sk.power - opp.def * 0.3);
-        opp.hp = Math.max(0, opp.hp - dmg);
-        spawnFx("cthulhu", u.x, opp.x);
-        addLog(u.name + " 开启【克苏鲁状态】体型巨化！精神污染控制敌人 -" + dmg + "！");
+        u.big = true; u.atk = Math.round(u.atk * 1.25); opp.stunTimer = 2.2;
+        spawnFx("cthulhu", u.x, opp.x, oppBottom); broadcastFx({ fx: "cthulhu", fromX: u.x, toX: opp.x, toBottom: oppBottom, log: u.name + " 克苏鲁巨化精神控制！" });
+        hitTarget(Math.round(u.atk * sk.power), 28); addLog(u.name + " 克苏鲁巨化精神控制！");
       } else {
-        spawnFx(sk.fx, u.x, opp.x);
-        if (distPct <= maxRangePct) {
-          const dmg = Math.round(u.atk * sk.power - opp.def * 0.35);
-          opp.hp = Math.max(0, opp.hp - dmg);
-          if (sk.type === "stink_cc" || sk.type === "ink_cc" || sk.type === "code_cc") opp.stunTimer = 1.6;
+        spawnFx(sk.fx, u.x, opp.x, oppBottom); broadcastFx({ fx: sk.fx, fromX: u.x, toX: opp.x, toBottom: oppBottom });
+        if (dx <= sk.range * 15 && dz <= 50) {
+          hitTarget(Math.round(u.atk * sk.power - opp.def * 0.3), 26);
+          if (["stink_cc","ink_cc","code_cc"].includes(sk.type)) opp.stunTimer = 1.6;
           if (sk.type === "ban_ult") opp.stunTimer = 2.4;
           if (sk.type === "tentacle_slow") opp.slowTimer = 3.5;
-          addLog(u.name + " 释放「" + sk.name + "」命中 -" + dmg + "！");
-          if (u.onion > 0) {
-            u.onion = 0;
-            const ex = Math.round(u.atk * 0.55);
-            opp.hp = Math.max(0, opp.hp - ex);
-            addLog("🧅 环绕大葱追击 -" + ex + "！");
-          }
-        } else addLog(u.name + " 释放「" + sk.name + "」，但距离太远未命中！");
+          addLog(u.name + " 释放「" + sk.name + "」命中！"); broadcastFx({ log: u.name + " 释放「" + sk.name + "」命中！" });
+        }
       }
     }
 
-    /* ================= 玩法二：经典回合制对战 ================= */
+    /* ================= 模式二：经典回合制 ================= */
     function makeTbFighter(cid, x) {
       const c = byId(cid);
-      return { cid: c.id, name: c.name, hp: c.hp, max_hp: c.hp, atk: c.atk, def: c.def, spd: c.spd, move: c.move || 2, x, cds: [0, 0, 0], onion: 0, emp_atk: 0, big: false, domain: 0, slow: 0, stunned: false };
+      return { cid: c.id, name: c.name, hp: c.hp, max_hp: c.hp, atk: c.atk, def: c.def, spd: c.spd, move: c.move || 2, x, cds: [0,0,0], onion: 0, emp_atk: 0, big: false, domain: 0, slow: 0, stunned: false };
     }
     function createTbBattle(hCid, gCid) {
       const h = makeTbFighter(hCid, 1), g = makeTbFighter(gCid, 7);
       const first = h.spd >= g.spd ? "host" : "guest";
       const mapIdx = Math.floor(Math.random() * BG_MAPS.length);
-      return { turn: first, round: 1, moved: false, mapIdx, host: h, guest: g, last: null, winner: null, logs: ["随机地图【" + BG_MAPS[mapIdx].name + "】！", (first === "host" ? h.name : g.name) + " 先手！"] };
+      return { mode: "tb", turn: first, round: 1, moved: false, mapIdx, host: h, guest: g, last: null, winner: null, logs: ["随机地图【" + BG_MAPS[mapIdx].name + "】！", (first === "host" ? h.name : g.name) + " 先手！"] };
     }
     function renderRoom() {
       if (!room) return;
+      const roomMode = (room.battle_state && room.battle_state.mode) || "rt";
       if (room.status === "waiting") {
+        cancelAnimationFrame(rafId); rafId = null; rtState = null;
         $("waitRoom").style.display = "block"; $("battleArea").style.display = "none";
         $("roomTitle").textContent = "房间号：" + room.code;
-        const role = room.host_id === me.id ? "host" : "guest";
-        renderCharPick(role === "host" ? room.host_char : room.guest_char);
-        const hName = byId(room.host_char).name + (room.host_ready ? "（已准备）" : "（未准备）");
-        const gName = room.guest_id ? (byId(room.guest_char).name + (room.guest_ready ? "（已准备）" : "（未准备）")) : "等待对手加入…";
-        $("waitStatus").textContent = "房主：" + hName + "  |  对手：" + gName;
-        $("readyBtn").textContent = (role === "host" ? room.host_ready : room.guest_ready) ? "取消准备" : "准备出战";
+        $("onlineModeBox").style.display = "flex";
+        const isHost = room.host_id === me.id;
+        $("modeRtBtn").disabled = !isHost; $("modeTbBtn").disabled = !isHost;
+        $("modeRtBtn").classList.toggle("on", roomMode === "rt");
+        $("modeTbBtn").classList.toggle("on", roomMode === "tb");
+        renderCharPick(isHost ? room.host_char : room.guest_char);
+        $("waitStatus").textContent = "房主：" + byId(room.host_char).name + (room.host_ready ? "(已准备)" : "(未准备)") + " | 对手：" + (room.guest_id ? byId(room.guest_char).name + (room.guest_ready ? "(已准备)" : "(未准备)") : "等待加入…");
+        $("readyBtn").textContent = (isHost ? room.host_ready : room.guest_ready) ? "取消准备" : "准备出战";
       } else {
         $("waitRoom").style.display = "none"; $("battleArea").style.display = "block";
-        renderTbBattle();
+        if (roomMode === "rt") {
+          if (!rtState) startRealtimeBattle(room.host_char, room.guest_char, room.battle_state.mapIdx);
+        } else {
+          renderTbBattle();
+        }
       }
     }
     function tbDist(a, b) { return Math.abs(a.x - b.x); }
     function xToPct(x) { return x * 10 + 10; }
 
     function renderTbBattle() {
-      const bs = room.battle_state;
-      if (!bs || !bs.host) return;
+      const bs = room.battle_state; if (!bs || !bs.host) return;
       const m = BG_MAPS[bs.mapIdx || 0] || BG_MAPS[0];
       $("stage").style.backgroundImage = "url('" + m.img + "')";
       $("stage").classList.toggle("domain-on", bs.host.domain > 0 || bs.guest.domain > 0);
-      $("groundTrack").style.display = "grid";
-      $("rtMovePad").style.display = "none";
+      $("actionPad").style.display = "none"; $("groundTrack").style.display = "grid"; $("skillBar").style.display = "grid";
 
-      renderHud("h", bs.host, bs.guest.domain > 0);
-      renderHud("g", bs.guest, bs.host.domain > 0);
+      renderHud("h", bs.host, bs.guest.domain > 0); renderHud("g", bs.guest, bs.host.domain > 0);
 
       const activeRole = bs.turn;
       const isMy = room.status === "fighting" && (mode === "tb_pvp" || (mode === "tb_ai" && activeRole === "host") || (mode === "online" && ((room.host_id === me.id && activeRole === "host") || (room.guest_id === me.id && activeRole === "guest"))));
@@ -795,39 +886,26 @@
       const track = $("groundTrack"); track.replaceChildren();
       for (let x = 0; x < 9; x++) {
         const s = el("div", "slot");
-        if (isMy && !bs.moved && bs.host.x !== x && bs.guest.x !== x && Math.abs(activeF.x - x) <= maxM) {
-          s.classList.add("walkable"); s.onclick = () => tbMove(x);
-        }
+        if (isMy && !bs.moved && bs.host.x !== x && bs.guest.x !== x && Math.abs(activeF.x - x) <= maxM) { s.classList.add("walkable"); s.onclick = () => tbMove(x); }
         track.append(s);
       }
 
       [["fHost", "hImg", "hTag", bs.host, 1], ["fGuest", "gImg", "gTag", bs.guest, -1]].forEach(([id, imgId, tagId, f, dir]) => {
         const box = $(id), c = byId(f.cid);
-        box.classList.add("smooth");
-        box.style.left = xToPct(f.x) + "%";
-        box.style.bottom = "12%";
-        box.style.transform = "translateX(-50%) scale(" + (f.big ? 1.3 : 1) + ")";
-        box.classList.toggle("big", f.big);
-        $(tagId).textContent = f.name;
-        $(imgId).src = c.avatar;
+        box.classList.add("smooth"); box.style.left = xToPct(f.x) + "%"; box.style.bottom = "12%";
+        box.style.transform = "translateX(-50%) scale(" + (f.big ? 1.3 : 1) + ")"; box.classList.toggle("big", f.big);
+        $(tagId).textContent = f.name; $(imgId).src = c.avatar;
         $(imgId).onerror = () => { if (c.fallbackAvatar) $(imgId).src = c.fallbackAvatar; };
         $(imgId).style.transform = "scaleX(" + dir + ")";
       });
 
-      if (bs.last && bs.last.key !== lastAnimKey) {
-        lastAnimKey = bs.last.key;
-        spawnFx(bs.last.fx, xToPct(bs.last.fromX), xToPct(bs.last.toX));
-      }
+      if (bs.last && bs.last.key !== lastAnimKey) { lastAnimKey = bs.last.key; spawnFx(bs.last.fx, xToPct(bs.last.fromX), xToPct(bs.last.toX), 12); }
 
       if (room.status === "finished") {
         $("turnTip").textContent = "🏆 对决结束！" + bs[bs.winner].name + " 获胜！";
-        $("endBar").style.display = "flex";
-        $("rematchBtn").style.display = (mode !== "online" || room.host_id === me.id) ? "inline-block" : "none";
-        $("tbHintRow").style.display = "none";
+        $("endBar").style.display = "flex"; $("rematchBtn").style.display = (mode !== "online" || room.host_id === me.id) ? "inline-block" : "none"; $("tbHintRow").style.display = "none";
       } else {
-        $("endBar").style.display = "none";
-        $("tbHintRow").style.display = "flex";
-        $("endTurnBtn").style.display = isMy ? "inline-block" : "none";
+        $("endBar").style.display = "none"; $("tbHintRow").style.display = "flex"; $("endTurnBtn").style.display = isMy ? "inline-block" : "none";
         $("turnTip").textContent = "♟️【" + m.name + "】第 " + bs.round + " 回合 · 相距 " + tbDist(bs.host, bs.guest) + " 格 · " + (isMy ? "轮到 " + activeF.name : "等待对手…");
         $("moveTip").textContent = isMy ? (bs.moved ? "已移动，请出招" : "点绿点左右移动（最多 " + maxM + " 格）") : "对方思考中…";
       }
@@ -837,8 +915,7 @@
       const myF = bs[viewRole], charDef = byId(myF.cid), d = tbDist(bs.host, bs.guest);
       const addB = (t, sub, ic, dis, fn) => {
         const b = el("button", "sk-btn"); b.type = "button"; b.disabled = dis;
-        const im = el("img"); im.src = ic;
-        const tx = el("div"); tx.append(el("b", "", t), el("span", "", sub));
+        const im = el("img"); im.src = ic; const tx = el("div"); tx.append(el("b", "", t), el("span", "", sub));
         b.append(im, tx); b.onclick = fn; bar.append(b);
       };
       addB("普通攻击", "射程2格", charDef.skills[0].icon, !isMy || d > 2, () => tbAct(-1));
@@ -848,8 +925,7 @@
       });
 
       const logs = $("logs"); logs.replaceChildren();
-      (bs.logs || []).slice(-10).forEach(l => logs.append(el("div", "", l)));
-      logs.scrollTop = logs.scrollHeight;
+      (bs.logs || []).slice(-10).forEach(l => logs.append(el("div", "", l))); logs.scrollTop = logs.scrollHeight;
       if (mode === "tb_ai" && room.status === "fighting" && bs.turn === "guest") setTimeout(tbAiTurn, 650);
     }
 
@@ -859,25 +935,21 @@
       if (data) { room = data; renderRoom(); }
     }
     async function tbMove(nx) {
-      const bs = JSON.parse(JSON.stringify(room.battle_state));
-      if (bs.moved) return;
-      bs[bs.turn].x = nx; bs.moved = true;
-      bs.logs.push(bs[bs.turn].name + " 移动到第 " + (nx + 1) + " 号位");
+      const bs = JSON.parse(JSON.stringify(room.battle_state)); if (bs.moved) return;
+      bs[bs.turn].x = nx; bs.moved = true; bs.logs.push(bs[bs.turn].name + " 移动到第 " + (nx + 1) + " 号位");
       await tbSave(room.status, bs);
     }
     $("endTurnBtn").onclick = () => tbAct(-99);
 
     async function tbAct(skIdx) {
-      const bs = JSON.parse(JSON.stringify(room.battle_state));
-      if (room.status !== "fighting") return;
+      const bs = JSON.parse(JSON.stringify(room.battle_state)); if (room.status !== "fighting") return;
       const role = bs.turn, opp = role === "host" ? "guest" : "host", meF = bs[role], opF = bs[opp], c = byId(meF.cid);
       let log = "", hit = true, fx = null;
-      meF.cds = meF.cds.map(x => Math.max(0, x - 1));
-      if (meF.slow > 0) meF.slow--;
-      const dmgCalc = (m) => Math.max(25, Math.round(meF.atk * m - (meF.domain > 0 ? opF.def * 0.75 : opF.def) * 0.45));
+      meF.cds = meF.cds.map(x => Math.max(0, x - 1)); if (meF.slow > 0) meF.slow--;
+      const dmgCalc = m => Math.max(25, Math.round(meF.atk * m - (meF.domain > 0 ? opF.def * 0.75 : opF.def) * 0.45));
 
       if (skIdx === -99) { hit = false; log = meF.name + " 跳过回合"; }
-      else if (skIdx === -1) { const dmg = dmgCalc(meF.emp_atk > 0 ? 1.25 : 0.85); opF.hp = Math.max(0, opF.hp - dmg); if (meF.emp_atk > 0) meF.emp_atk--; fx = "slash"; log = meF.name + " 普攻 -" + dmg; }
+      else if (skIdx === -1) { const dmg = dmgCalc(meF.emp_atk > 0 ? 1.25 : 0.85); opF.hp = Math.max(0, opF.hp - dmg); if (meF.emp_atk > 0) meF.emp_atk--; log = meF.name + " 普攻 -" + dmg; }
       else {
         const sk = c.skills[skIdx]; meF.cds[skIdx] = sk.cd; fx = sk.fx;
         if (sk.type === "dash_onion") { meF.x = meF.x < opF.x ? Math.max(0, opF.x - 1) : Math.min(8, opF.x + 1); const dmg = dmgCalc(sk.power); opF.hp = Math.max(0, opF.hp - dmg); meF.onion = 1; log = meF.name + " 大葱突进 -" + dmg; }
@@ -899,8 +971,7 @@
     }
 
     async function tbAiTurn() {
-      const bs = JSON.parse(JSON.stringify(room.battle_state));
-      if (room.status !== "fighting" || bs.turn !== "guest") return;
+      const bs = JSON.parse(JSON.stringify(room.battle_state)); if (room.status !== "fighting" || bs.turn !== "guest") return;
       const ai = bs.guest, pl = bs.host;
       if (!bs.moved && tbDist(ai, pl) > 2) {
         const steps = Math.max(1, ai.move + (ai.domain > 0 ? 2 : 0) - (ai.slow > 0 ? 1 : 0));
@@ -913,10 +984,13 @@
     }
 
     $("rematchBtn").onclick = async () => {
-      if (mode === "rt_ai") { startRealtimeBattle(); return; }
+      if (mode === "rt_ai") { startRealtimeBattle(localPick.host, localPick.guest, Math.floor(Math.random() * BG_MAPS.length)); return; }
       if (mode !== "online") { room.status = "fighting"; room.battle_state = createTbBattle(localPick.host, localPick.guest); renderRoom(); return; }
       if (room.host_id !== me.id) return;
-      const { data } = await db.from("rooms").update({ status: "waiting", host_ready: false, guest_ready: false, battle_state: {}, updated_at: new Date().toISOString() }).eq("id", room.id).select().single();
+      const roomMode = (room.battle_state && room.battle_state.mode) || "rt";
+      const { data } = await db.from("rooms").update({
+        status: "waiting", host_ready: false, guest_ready: false, battle_state: { mode: roomMode }, updated_at: new Date().toISOString()
+      }).eq("id", room.id).select().single();
       if (data) { room = data; renderRoom(); }
     };
 
