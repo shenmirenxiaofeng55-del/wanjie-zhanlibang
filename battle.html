@@ -2,96 +2,164 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>联机对战 · 万界战力榜</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>2D 横版对战 · 万界战力榜</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #080d1b; color: white; }
-    header { padding: 20px 16px; text-align: center; background: linear-gradient(135deg, #172b59, #35165e); border-bottom: 1px solid #33436b; }
-    header h1 { margin: 0; font-size: 28px; color: #f5d889; }
-    header p { color: #c4cbe0; margin: 6px 0 0; }
-    nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; padding: 14px; background: #111a30; }
+    header { padding: 14px; text-align: center; background: linear-gradient(135deg, #172b59, #35165e); border-bottom: 1px solid #33436b; }
+    header h1 { margin: 0; font-size: 22px; color: #f5d889; }
+    header p { color: #c4cbe0; margin: 4px 0 0; font-size: 13px; }
+    nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; padding: 10px; background: #111a30; }
     nav a { color: #d9e4ff; text-decoration: none; }
-    main { max-width: 920px; margin: auto; padding: 18px 14px; }
-    .card { padding: 20px; background: #121c32; border: 1px solid #293b60; border-radius: 16px; margin-bottom: 16px; }
+    main { max-width: 980px; margin: auto; padding: 12px; }
+    .card { padding: 16px; background: #121c32; border: 1px solid #293b60; border-radius: 16px; margin-bottom: 14px; }
     .card h2, .card h3 { color: #f5d889; margin-top: 0; }
-    .btn { padding: 11px 20px; border-radius: 10px; border: 0; background: #e5b84f; color: #171322; font-weight: bold; font-size: 15px; cursor: pointer; }
+    .btn { padding: 10px 16px; border-radius: 10px; border: 0; background: #e5b84f; color: #171322; font-weight: bold; font-size: 14px; cursor: pointer; }
     .btn.sub { background: transparent; color: #d9e4ff; border: 1px solid #334975; }
     .btn:disabled { opacity: .45; cursor: not-allowed; }
-    input { padding: 11px 14px; border-radius: 10px; border: 1px solid #293b60; background: #0b1326; color: white; font-size: 16px; }
+    input { padding: 10px 14px; border-radius: 10px; border: 1px solid #293b60; background: #0b1326; color: white; font-size: 15px; }
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .msg { color: #b9c5dd; line-height: 1.7; }
+    .msg { color: #b9c5dd; line-height: 1.6; font-size: 14px; }
     .msg.err { color: #ff9a9a; }
 
-    /* 选角卡片 */
-    .char-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 14px 0; }
-    .pick-card { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: #0b1326; border: 2px solid #263659; cursor: pointer; }
+    /* 选角 */
+    .char-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin: 12px 0; }
+    .pick-card { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 12px; background: #0b1326; border: 2px solid #263659; cursor: pointer; }
     .pick-card.on { border-color: #e5b84f; background: #18233f; }
-    .pick-card img { width: 64px; height: 64px; border-radius: 10px; object-fit: contain; background: #080d1b; }
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; border: 1px solid #3d5485; color: #9ec0ff; margin-left: 6px; }
-    .badge.ok { border-color: #7fe0a8; color: #7fe0a8; }
+    .pick-card img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: #080d1b; flex-shrink: 0; }
 
-    /* 2D 战斗舞台 */
-    .arena { position: relative; padding: 24px 16px; border-radius: 16px; background: radial-gradient(circle at center, #182444 0%, #0a1020 100%); border: 1px solid #334975; overflow: hidden; transition: background .4s; }
-    .arena.domain-on { background: radial-gradient(circle at center, #35165e 0%, #120924 100%); border-color: #b388ff; box-shadow: inset 0 0 40px rgba(179,136,255,.35); }
-    .fighters { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; min-height: 220px; }
-    .fighter { width: 46%; text-align: center; position: relative; }
-    .hp-box { background: #080d1b; border: 1px solid #2b3f66; border-radius: 10px; padding: 8px; margin-bottom: 12px; }
+    /* 血条 HUD */
+    .hud { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+    .hp-box { background: #080d1b; border: 1px solid #2b3f66; border-radius: 12px; padding: 8px 10px; }
     .hp-title { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
-    .hp-bar { height: 12px; background: #1e2942; border-radius: 99px; overflow: hidden; }
-    .hp-fill { height: 100%; background: linear-gradient(90deg, #43c57b, #7fe0a8); transition: width .35s; }
+    .hp-bar { height: 11px; background: #1e2942; border-radius: 99px; overflow: hidden; }
+    .hp-fill { height: 100%; background: linear-gradient(90deg, #43c57b, #7fe0a8); transition: width .2s; }
     .hp-fill.low { background: linear-gradient(90deg, #ff5252, #ff8a80); }
-    .sprite-wrap { position: relative; display: inline-block; padding: 8px; transition: transform .35s; }
-    .sprite-wrap.rage { transform: scale(1.25); filter: drop-shadow(0 0 14px rgba(255,120,60,.85)); }
-    .sprite { width: 112px; height: 112px; object-fit: contain; transition: transform .25s; }
-    .fighter.right .sprite { transform: scaleX(-1); }
-    .buffs { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; min-height: 22px; margin-top: 6px; }
-    .buff { font-size: 11px; padding: 2px 7px; border-radius: 8px; background: #1b2847; color: #ffdf91; border: 1px solid #3c5385; }
+    .buffs { display: flex; flex-wrap: wrap; gap: 4px; min-height: 20px; margin-top: 5px; }
+    .buff { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #1b2847; color: #ffdf91; border: 1px solid #3c5385; }
     .buff.debuff { color: #ff9a9a; border-color: #8f3a4a; background: #2c131d; }
 
-    /* 2D 动作动画 */
-    @keyframes dashL { 0%{transform:translateX(0)} 45%{transform:translateX(55px)} 100%{transform:translateX(0)} }
-    @keyframes dashR { 0%{transform:translateX(0)} 45%{transform:translateX(-55px)} 100%{transform:translateX(0)} }
-    @keyframes hitShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px);filter:brightness(1.8)} 75%{transform:translateX(8px)} }
-    .anim-dash-l { animation: dashL .38s ease; }
-    .anim-dash-r { animation: dashR .38s ease; }
-    .anim-hit { animation: hitShake .35s ease; }
+    /* 16:9 2D 横版舞台 */
+    .stage {
+      position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 230px;
+      border-radius: 16px; border: 2px solid #334975; overflow: hidden;
+      background-color: #0b1326; background-size: cover; background-position: center;
+      box-shadow: inset 0 -55px 70px rgba(0,0,0,.6);
+    }
+    .stage.domain-on { border-color: #b388ff; box-shadow: inset 0 0 80px rgba(140,70,240,.75); }
+    .stage.domain-on::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(circle, rgba(160,80,255,.15), rgba(45,10,80,.48));
+    }
 
-    /* 技能栏 */
-    .skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 14px; }
-    .sk-btn { display: flex; gap: 10px; align-items: center; text-align: left; padding: 10px; border-radius: 12px; background: #0b1326; border: 1px solid #2e436d; color: white; cursor: pointer; }
+    /* 回合制地面 9 点位 */
+    .ground-track {
+      position: absolute; left: 5%; right: 5%; bottom: 7%; height: 28px;
+      display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; z-index: 3;
+    }
+    .slot { border-radius: 99px; border: 1px dashed rgba(255,255,255,.2); background: rgba(8,13,27,.35); }
+    .slot.walkable { background: rgba(127,224,168,.38); border: 2px solid #7fe0a8; cursor: pointer; }
+
+    /* 角色实体 */
+    .fighter {
+      position: absolute; bottom: 12%; width: 13%; max-width: 106px; min-width: 58px;
+      transform: translateX(-50%); z-index: 5; text-align: center; pointer-events: none;
+      transition: transform .25s ease;
+    }
+    .fighter.smooth { transition: left .36s ease, transform .25s ease; }
+    .fighter.big { filter: drop-shadow(0 0 14px rgba(255,120,60,.95)); }
+    .fighter img {
+      width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 14px;
+      border: 2px solid #7fe0a8; box-shadow: 0 8px 18px rgba(0,0,0,.7); background: rgba(10,16,32,.7);
+    }
+    .fighter.p2 img { border-color: #ff8a80; }
+    .fighter .tag-name {
+      display: inline-block; margin-bottom: 3px; padding: 2px 7px; border-radius: 7px;
+      font-size: 11px; font-weight: bold; background: rgba(8,13,27,.82); color: #ffdf91; white-space: nowrap;
+    }
+    .onion-orbit {
+      position: absolute; top: -8px; right: -10px; font-size: 20px;
+      filter: drop-shadow(0 0 6px #7fe0a8); animation: spinOnion 1.2s linear infinite;
+    }
+    @keyframes spinOnion { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+
+    /* 2D 特效层 */
+    .fx-layer { position: absolute; inset: 0; pointer-events: none; z-index: 12; overflow: hidden; }
+    .fx-laser { position: absolute; height: 14px; border-radius: 99px; transform: translateY(-50%); }
+    .fx-laser.red { background: linear-gradient(90deg, #ff5252, #ff8a80); box-shadow: 0 0 20px #ff5252; }
+    .fx-laser.gold { height: 22px; background: linear-gradient(90deg, #fff, #ffdf91, #80deea); box-shadow: 0 0 28px #ffdf91; }
+    .fx-zone { position: absolute; bottom: 8%; width: 24%; height: 42%; transform: translateX(-50%); border-radius: 50%; }
+    .fx-zone.ban { border: 3px solid #ff5252; background: radial-gradient(circle, rgba(255,82,82,.48), transparent); box-shadow: 0 0 26px #ff5252; }
+    .fx-zone.code { border: 3px solid #00e676; background: radial-gradient(circle, rgba(0,230,118,.35), transparent); box-shadow: 0 0 22px #00e676; }
+    .fx-zone.tentacle { border: 3px solid #f06292; background: radial-gradient(circle, rgba(240,98,146,.4), transparent); }
+    .fx-banner {
+      position: absolute; left: 50%; top: 18%; transform: translateX(-50%);
+      padding: 8px 18px; border-radius: 10px; font-weight: bold; font-size: 16px; white-space: nowrap;
+    }
+    .fx-code { background: rgba(5,25,12,.92); color: #00e676; border: 2px solid #00e676; font-family: monospace; }
+    .fx-ban { background: rgba(45,8,12,.94); color: #ff5252; border: 3px solid #ff5252; font-family: monospace; font-size: 19px; }
+    .fx-ink { background: rgba(15,15,25,.92); color: #ce93d8; border: 2px solid #ab47bc; }
+    .fx-slash { position: absolute; font-size: 28px; transform: translate(-50%,-50%); }
+
+    /* 触屏自由移动控制器 + 技能区 */
+    .controls-wrap { display: flex; justify-content: space-between; align-items: stretch; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .move-pad { display: flex; gap: 8px; align-items: center; }
+    .pad-btn {
+      width: 60px; height: 56px; border-radius: 14px; border: 2px solid #3c5485;
+      background: #0b1326; color: #ffdf91; font-size: 18px; font-weight: bold;
+      touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer;
+    }
+    .pad-btn:active { background: #e5b84f; color: #171322; }
+
+    .skills { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; }
+    .sk-btn {
+      position: relative; display: flex; gap: 8px; align-items: center; text-align: left;
+      padding: 8px; border-radius: 12px; background: #0b1326; border: 1px solid #2e436d;
+      color: white; cursor: pointer; touch-action: manipulation;
+    }
     .sk-btn:hover:not(:disabled) { border-color: #e5b84f; }
     .sk-btn:disabled { opacity: .45; cursor: not-allowed; }
-    .sk-btn img { width: 42px; height: 42px; border-radius: 8px; flex-shrink: 0; }
-    .sk-btn b { display: block; color: #f5d889; font-size: 14px; }
-    .sk-btn span { font-size: 12px; color: #9db2d9; }
+    .sk-btn img { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; }
+    .sk-btn b { display: block; color: #f5d889; font-size: 12px; }
+    .sk-btn span { font-size: 11px; color: #9db2d9; }
 
-    .logs { max-height: 170px; overflow-y: auto; background: #080d1b; border: 1px solid #233354; border-radius: 10px; padding: 10px 12px; margin-top: 14px; font-size: 13px; line-height: 1.7; color: #c5d1ea; }
-    .turn-tip { text-align: center; font-weight: bold; font-size: 16px; color: #ffdf91; margin-bottom: 10px; }
-    footer { text-align: center; padding: 25px; color: #8593ad; border-top: 1px solid #263451; margin-top: 30px; }
+    .logs { max-height: 120px; overflow-y: auto; background: #080d1b; border: 1px solid #233354; border-radius: 10px; padding: 8px 10px; margin-top: 10px; font-size: 12px; line-height: 1.6; color: #c5d1ea; }
+    .turn-tip { text-align: center; font-weight: bold; font-size: 14px; color: #ffdf91; margin-bottom: 8px; }
+    footer { text-align: center; padding: 18px; color: #8593ad; border-top: 1px solid #263451; margin-top: 20px; font-size: 13px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>万界战力榜 · 联机对战</h1>
-    <p>开房间 · 选角色 · 2D 实时对决</p>
+    <h1>万界战力榜 · 2D 横版对战</h1>
+    <p>实时自由移动格斗 & 回合制策略 · 4 张随机横版地图</p>
   </header>
 
   <nav>
     <a href="index.html">首页</a>
     <a href="characters.html">查看角色</a>
-    <a href="battle.html">联机对战</a>
-    <a href="login.html">我的账号</a>
+    <a href="battle.html">对战舞台</a>
+    <a href="login.html" id="authLink">登录</a>
   </nav>
 
   <main>
-    <div id="gate" class="card msg">正在检查登录状态…</div>
-
     <!-- 大厅 -->
-    <section id="lobby" class="card" style="display:none">
-      <h2>⚔️ 创建或加入房间</h2>
-      <div class="row" style="margin-bottom:14px;">
-        <button id="createBtn" class="btn" type="button">创建新房间</button>
+    <section id="lobby" class="card">
+      <h2>⚡ 玩法一：实时横版自由对战（推荐）</h2>
+      <p class="msg">自由跑跳、随时出招、按真实秒数冷却（支持触屏按键 & 键盘 A/D/W + J/K/L/U）</p>
+      <div class="row" style="margin-bottom:18px;">
+        <button id="rtAiBtn" class="btn" type="button">🔥 实时横版 · 人机对战</button>
+      </div>
+
+      <h2>♟️ 玩法二：经典回合制对战</h2>
+      <div class="row" style="margin-bottom:12px;">
+        <button id="tbAiBtn" class="btn sub" type="button">🤖 回合制 · 人机对战</button>
+        <button id="tbPvpBtn" class="btn sub" type="button">👥 回合制 · 本地双人</button>
+      </div>
+
+      <h3>🌐 回合制 · 联机房间（需登录）</h3>
+      <div class="row" style="margin-bottom:10px;">
+        <button id="createBtn" class="btn" type="button">创建联机房间</button>
       </div>
       <div class="row">
         <input id="joinCode" type="text" maxlength="6" placeholder="输入 6 位房间号" style="text-transform:uppercase;width:180px;">
@@ -100,53 +168,69 @@
       <p id="lobbyMsg" class="msg"></p>
     </section>
 
-    <!-- 房间准备区 -->
+    <!-- 选角区 -->
     <section id="waitRoom" class="card" style="display:none">
       <div class="row" style="justify-content:space-between;">
-        <h2 style="margin:0;">房间号：<span id="roomCode"></span></h2>
+        <h2 style="margin:0;" id="roomTitle">准备对决</h2>
         <div class="row">
-          <button id="copyCode" class="btn sub" type="button">复制房间号</button>
-          <button id="leaveBtn" class="btn sub" type="button">退出房间</button>
+          <button id="copyCode" class="btn sub" type="button" style="display:none">复制房间号</button>
+          <button id="leaveBtn" class="btn sub" type="button">返回大厅</button>
         </div>
       </div>
       <p class="msg" id="waitStatus"></p>
-
-      <h3>选择出战角色</h3>
+      <h3 id="pickTitle">选择出战角色</h3>
       <div id="charPick" class="char-pick"></div>
-
       <div class="row" style="margin-top:12px;">
-        <button id="readyBtn" class="btn" type="button">准备</button>
+        <button id="readyBtn" class="btn" type="button">下一步 / 开战</button>
       </div>
     </section>
 
-    <!-- 2D 战斗区 -->
+    <!-- 2D 横版战斗舞台 -->
     <section id="battleArea" style="display:none">
       <div class="card">
         <div id="turnTip" class="turn-tip"></div>
-        <div id="arena" class="arena">
-          <div class="fighters">
-            <div class="fighter left" id="fHost">
-              <div class="hp-box">
-                <div class="hp-title"><b id="hName">房主</b><span id="hHpTxt"></span></div>
-                <div class="hp-bar"><div id="hHpBar" class="hp-fill"></div></div>
-              </div>
-              <div id="hWrap" class="sprite-wrap"><img id="hImg" class="sprite" alt="房主角色"></div>
-              <div id="hBuffs" class="buffs"></div>
-            </div>
 
-            <div class="fighter right" id="fGuest">
-              <div class="hp-box">
-                <div class="hp-title"><b id="gName">对手</b><span id="gHpTxt"></span></div>
-                <div class="hp-bar"><div id="gHpBar" class="hp-fill"></div></div>
-              </div>
-              <div id="gWrap" class="sprite-wrap"><img id="gImg" class="sprite" alt="对手角色"></div>
-              <div id="gBuffs" class="buffs"></div>
-            </div>
+        <div class="hud">
+          <div class="hp-box">
+            <div class="hp-title"><b id="hName">1P</b><span id="hHpTxt"></span></div>
+            <div class="hp-bar"><div id="hHpBar" class="hp-fill"></div></div>
+            <div id="hBuffs" class="buffs"></div>
+          </div>
+          <div class="hp-box">
+            <div class="hp-title"><b id="gName">2P</b><span id="gHpTxt"></span></div>
+            <div class="hp-bar"><div id="gHpBar" class="hp-fill"></div></div>
+            <div id="gBuffs" class="buffs"></div>
           </div>
         </div>
 
-        <div id="skillBar" class="skills"></div>
-        <div id="endBar" class="row" style="margin-top:14px;display:none;">
+        <div id="stage" class="stage">
+          <div id="groundTrack" class="ground-track" style="display:none"></div>
+          <div id="fHost" class="fighter">
+            <span class="tag-name" id="hTag"></span>
+            <img id="hImg" alt="1P">
+          </div>
+          <div id="fGuest" class="fighter p2">
+            <span class="tag-name" id="gTag"></span>
+            <img id="gImg" alt="2P">
+          </div>
+          <div id="fxLayer" class="fx-layer"></div>
+        </div>
+
+        <div id="tbHintRow" class="row" style="justify-content:space-between;margin-top:8px;display:none;">
+          <span class="msg" id="moveTip"></span>
+          <button id="endTurnBtn" class="btn sub" type="button">跳过回合</button>
+        </div>
+
+        <div class="controls-wrap">
+          <div id="rtMovePad" class="move-pad" style="display:none;">
+            <button id="btnLeft" class="pad-btn" type="button">◀</button>
+            <button id="btnJump" class="pad-btn" type="button">▲跳</button>
+            <button id="btnRight" class="pad-btn" type="button">▶</button>
+          </div>
+          <div id="skillBar" class="skills"></div>
+        </div>
+
+        <div id="endBar" class="row" style="margin-top:12px;display:none;">
           <button id="rematchBtn" class="btn" type="button">再来一局</button>
           <button id="exitBattleBtn" class="btn sub" type="button">返回大厅</button>
         </div>
@@ -171,7 +255,17 @@
     const CHARS = window.WANJIE_CHARACTERS || [];
     const byId = id => CHARS.find(c => c.id === id) || CHARS[0];
 
-    let me = null, room = null, channel = null, pollTimer = null, lastAnimKey = "";
+    const BG_MAPS = [
+      { img: "assets/bg1.jpg", name: "荒原战营" },
+      { img: "assets/bg2.jpg", name: "荧光秘境" },
+      { img: "assets/bg3.jpg", name: "末日废土" },
+      { img: "assets/bg4.jpg", name: "星际基地" }
+    ];
+
+    let me = null, mode = "rt_ai", room = null, channel = null, pollTimer = null, lastAnimKey = "";
+    let localPick = { host: CHARS[0].id, guest: CHARS[3] ? CHARS[3].id : CHARS[1].id, step: "host" };
+    let rtState = null, rafId = null, lastTs = 0;
+    const keys = { left: false, right: false, jump: false };
 
     function el(tag, cls, text) {
       const e = document.createElement(tag);
@@ -185,103 +279,98 @@
       return Array.from({ length: 6 }, () => s[Math.floor(Math.random() * s.length)]).join("");
     }
 
-    function myRole() {
-      if (!room || !me) return null;
-      return room.host_id === me.id ? "host" : (room.guest_id === me.id ? "guest" : null);
-    }
-
     async function init() {
       const { data: { user } } = await db.auth.getUser();
-      if (!user) {
-        $("gate").textContent = "";
-        const a = el("a", "", "请先登录后再进入联机对战");
-        a.href = "login.html";
-        a.style.color = "#f5d889";
-        $("gate").append(a);
-        return;
-      }
-      me = user;
-      $("gate").style.display = "none";
-      $("lobby").style.display = "block";
+      if (user) { me = user; $("authLink").textContent = "我的账号"; }
       renderCharPick();
+      bindRealtimeControls();
     }
 
-    function renderCharPick() {
+    function renderCharPick(selectedId) {
       const box = $("charPick");
       box.replaceChildren();
       CHARS.forEach(c => {
-        const card = el("div", "pick-card");
+        const card = el("div", "pick-card" + (selectedId === c.id ? " on" : ""));
         card.dataset.cid = c.id;
         const img = el("img");
         img.src = c.avatar;
-        img.alt = c.name;
+        img.onerror = () => { if (c.fallbackAvatar) img.src = c.fallbackAvatar; };
         const txt = el("div");
-        txt.append(el("b", "", c.name), el("div", "msg", c.title + " · 生命 " + c.hp));
+        txt.append(el("b", "", c.name), el("div", "msg", c.title));
         card.append(img, txt);
         card.onclick = () => pickChar(c.id);
         box.append(card);
       });
     }
 
-    async function enterRoom(r) {
-      room = r;
+    // 模式入口
+    $("rtAiBtn").onclick = () => startSetup("rt_ai");
+    $("tbAiBtn").onclick = () => startSetup("tb_ai");
+    $("tbPvpBtn").onclick = () => startSetup("tb_pvp");
+
+    function startSetup(m) {
+      mode = m;
+      localPick.step = "host";
       $("lobby").style.display = "none";
-      if (channel) await db.removeChannel(channel);
-      channel = db.channel("room-" + r.id)
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rooms", filter: "id=eq." + r.id }, payload => {
-          room = payload.new;
-          renderRoom();
-        })
-        .subscribe();
-
-      clearInterval(pollTimer);
-      pollTimer = setInterval(async () => {
-        if (!room) return;
-        const { data } = await db.from("rooms").select("*").eq("id", room.id).maybeSingle();
-        if (data && data.updated_at !== room.updated_at) { room = data; renderRoom(); }
-      }, 3000);
-
-      renderRoom();
+      $("waitRoom").style.display = "block";
+      $("copyCode").style.display = "none";
+      $("roomTitle").textContent = m === "rt_ai" ? "⚡ 实时横版 · 人机对战" : (m === "tb_ai" ? "♟️ 回合制 · 人机对战" : "♟️ 回合制 · 本地双人");
+      $("pickTitle").textContent = "为 1P 选择角色";
+      $("waitStatus").textContent = "1P：" + byId(localPick.host).name + "  |  2P：" + byId(localPick.guest).name;
+      $("readyBtn").textContent = "下一步";
+      renderCharPick(localPick.host);
     }
 
     $("createBtn").onclick = async () => {
+      if (!me) { $("lobbyMsg").textContent = "请先登录后再创建联机房间"; $("lobbyMsg").className = "msg err"; return; }
+      mode = "online";
       $("lobbyMsg").textContent = "正在创建房间…";
-      const code = genCode();
-      const { data, error } = await db.from("rooms").insert({
-        code,
-        host_id: me.id,
-        host_char: CHARS[0].id
-      }).select().single();
+      const { data, error } = await db.from("rooms").insert({ code: genCode(), host_id: me.id, host_char: CHARS[0].id }).select().single();
       if (error) { $("lobbyMsg").textContent = "创建失败：" + error.message; $("lobbyMsg").className = "msg err"; return; }
-      enterRoom(data);
+      enterOnlineRoom(data);
     };
 
     $("joinBtn").onclick = async () => {
+      if (!me) { $("lobbyMsg").textContent = "请先登录后再加入联机房间"; $("lobbyMsg").className = "msg err"; return; }
       const code = $("joinCode").value.trim().toUpperCase();
       if (!code) return;
+      mode = "online";
       $("lobbyMsg").textContent = "正在加入…";
       const { data: r, error } = await db.from("rooms").select("*").eq("code", code).maybeSingle();
       if (error || !r) { $("lobbyMsg").textContent = "找不到该房间号"; $("lobbyMsg").className = "msg err"; return; }
-      if (r.host_id === me.id || r.guest_id === me.id) { enterRoom(r); return; }
+      if (r.host_id === me.id || r.guest_id === me.id) { enterOnlineRoom(r); return; }
       if (r.guest_id || r.status !== "waiting") { $("lobbyMsg").textContent = "房间已满或正在对战中"; $("lobbyMsg").className = "msg err"; return; }
       const { data: updated, error: e2 } = await db.from("rooms").update({
-        guest_id: me.id,
-        guest_char: CHARS[1] ? CHARS[1].id : CHARS[0].id,
-        updated_at: new Date().toISOString()
+        guest_id: me.id, guest_char: CHARS[3] ? CHARS[3].id : CHARS[1].id, updated_at: new Date().toISOString()
       }).eq("id", r.id).select().single();
       if (e2) { $("lobbyMsg").textContent = "加入失败：" + e2.message; $("lobbyMsg").className = "msg err"; return; }
-      enterRoom(updated);
+      enterOnlineRoom(updated);
     };
 
-    $("copyCode").onclick = () => {
-      if (room) navigator.clipboard?.writeText(room.code);
-      $("waitStatus").textContent = "已复制房间号：" + room.code;
-    };
+    async function enterOnlineRoom(r) {
+      room = r;
+      $("lobby").style.display = "none";
+      $("copyCode").style.display = "inline-block";
+      if (channel) await db.removeChannel(channel);
+      channel = db.channel("room-" + r.id)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rooms", filter: "id=eq." + r.id }, payload => {
+          room = payload.new; renderRoom();
+        }).subscribe();
+      clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        if (!room || mode !== "online") return;
+        const { data } = await db.from("rooms").select("*").eq("id", room.id).maybeSingle();
+        if (data && data.updated_at !== room.updated_at) { room = data; renderRoom(); }
+      }, 3000);
+      renderRoom();
+    }
 
+    $("copyCode").onclick = () => { if (room) navigator.clipboard?.writeText(room.code); $("waitStatus").textContent = "已复制房间号：" + room.code; };
     $("leaveBtn").onclick = exitToLobby;
     $("exitBattleBtn").onclick = exitToLobby;
 
     async function exitToLobby() {
+      cancelAnimationFrame(rafId); rafId = null; rtState = null;
       if (channel) await db.removeChannel(channel);
       clearInterval(pollTimer);
       room = null;
@@ -292,286 +381,542 @@
     }
 
     async function pickChar(cid) {
-      const role = myRole();
-      if (!role || room.status !== "waiting") return;
-      const patch = role === "host"
-        ? { host_char: cid, host_ready: false, updated_at: new Date().toISOString() }
-        : { guest_char: cid, guest_ready: false, updated_at: new Date().toISOString() };
+      if (mode !== "online") {
+        localPick[localPick.step] = cid;
+        $("waitStatus").textContent = "1P：" + byId(localPick.host).name + "  |  2P：" + byId(localPick.guest).name;
+        renderCharPick(cid);
+        return;
+      }
+      const role = room.host_id === me.id ? "host" : "guest";
+      if (room.status !== "waiting") return;
+      const patch = role === "host" ? { host_char: cid, host_ready: false, updated_at: new Date().toISOString() } : { guest_char: cid, guest_ready: false, updated_at: new Date().toISOString() };
       const { data } = await db.from("rooms").update(patch).eq("id", room.id).select().single();
       if (data) { room = data; renderRoom(); }
     }
 
-    function makeFighter(cid) {
-      const c = byId(cid);
-      return { cid: c.id, name: c.name, hp: c.hp, max_hp: c.hp, atk: c.atk, def: c.def, spd: c.spd, cds: [0, 0, 0], onion: 0, emp_atk: 0, rage: false, domain: 0, stunned: false };
-    }
-
     $("readyBtn").onclick = async () => {
-      const role = myRole();
-      if (!role) return;
+      if (mode !== "online") {
+        if (localPick.step === "host") {
+          localPick.step = "guest";
+          $("pickTitle").textContent = mode === "tb_pvp" ? "为 2P 选择角色" : "为 电脑(AI) 选择角色";
+          renderCharPick(localPick.guest);
+          $("readyBtn").textContent = "开始战斗！";
+          return;
+        }
+        if (mode === "rt_ai") {
+          $("waitRoom").style.display = "none";
+          $("battleArea").style.display = "block";
+          startRealtimeBattle();
+        } else {
+          room = { status: "fighting", host_char: localPick.host, guest_char: localPick.guest, battle_state: createTbBattle(localPick.host, localPick.guest) };
+          renderRoom();
+        }
+        return;
+      }
+      const role = room.host_id === me.id ? "host" : "guest";
       const nextReady = role === "host" ? !room.host_ready : !room.guest_ready;
       const otherReady = role === "host" ? room.guest_ready : room.host_ready;
-      const bothReady = nextReady && otherReady && room.guest_id;
-
-      const patch = role === "host"
-        ? { host_ready: nextReady, updated_at: new Date().toISOString() }
-        : { guest_ready: nextReady, updated_at: new Date().toISOString() };
-
-      if (bothReady) {
-        const h = makeFighter(room.host_char);
-        const g = makeFighter(room.guest_char);
-        const first = h.spd >= g.spd ? "host" : "guest";
+      const patch = role === "host" ? { host_ready: nextReady, updated_at: new Date().toISOString() } : { guest_ready: nextReady, updated_at: new Date().toISOString() };
+      if (nextReady && otherReady && room.guest_id) {
         patch.status = "fighting";
-        patch.battle_state = {
-          turn: first,
-          round: 1,
-          host: h,
-          guest: g,
-          last: null,
-          winner: null,
-          logs: ["对决开始！" + (first === "host" ? h.name : g.name) + " 速度更快，先手行动！"]
-        };
+        patch.battle_state = createTbBattle(room.host_char, room.guest_char);
       }
-
       const { data } = await db.from("rooms").update(patch).eq("id", room.id).select().single();
       if (data) { room = data; renderRoom(); }
     };
 
-    function renderRoom() {
-      if (!room) return;
-      if (room.status === "waiting") {
-        $("waitRoom").style.display = "block";
-        $("battleArea").style.display = "none";
-        $("roomCode").textContent = room.code;
-        const role = myRole();
-        const myChar = role === "host" ? room.host_char : room.guest_char;
-        [...$("charPick").children].forEach(c => c.classList.toggle("on", c.dataset.cid === myChar));
-
-        const hName = byId(room.host_char).name + (room.host_ready ? "（已准备）" : "（未准备）");
-        const gName = room.guest_id ? (byId(room.guest_char).name + (room.guest_ready ? "（已准备）" : "（未准备）")) : "等待对手加入…";
-        $("waitStatus").textContent = "房主：" + hName + "  |  对手：" + gName;
-        const myReady = role === "host" ? room.host_ready : room.guest_ready;
-        $("readyBtn").textContent = myReady ? "取消准备" : "准备出战";
-      } else {
-        $("waitRoom").style.display = "none";
-        $("battleArea").style.display = "block";
-        renderBattle();
-      }
-    }
-
-    function renderFighter(side, f, domainDebuff) {
-      const c = byId(f.cid);
-      const p = side === "host" ? "h" : "g";
-      $(p + "Name").textContent = f.name + (myRole() === side ? " (你)" : "");
-      $(p + "HpTxt").textContent = f.hp + " / " + f.max_hp;
+    /* ================= 公共 HUD & 特效 ================= */
+    function renderHud(p, f, domainDebuff) {
+      $(p + "Name").textContent = f.name + (p === "h" ? " (1P)" : (mode.endsWith("_ai") ? " (AI)" : " (2P)"));
+      $(p + "HpTxt").textContent = Math.max(0, Math.round(f.hp)) + " / " + f.max_hp;
       const pct = Math.max(0, Math.round((f.hp / f.max_hp) * 100));
       $(p + "HpBar").style.width = pct + "%";
       $(p + "HpBar").classList.toggle("low", pct <= 30);
-      $(p + "Img").src = c.avatar;
-      $(p + "Wrap").classList.toggle("rage", !!f.rage);
 
       const buffs = $(p + "Buffs");
       buffs.replaceChildren();
-      if (f.rage) buffs.append(el("span", "buff", "🥛 牛奶狂暴"));
-      if (f.onion > 0) buffs.append(el("span", "buff", "🧅 强化大葱×" + f.onion));
-      if (f.emp_atk > 0) buffs.append(el("span", "buff", "⚡ 强化普攻 " + f.emp_atk + "回合"));
-      if (f.domain > 0) buffs.append(el("span", "buff", "🌌 领域展开 " + f.domain + "回合"));
-      if (domainDebuff) buffs.append(el("span", "buff debuff", "⬇ 领域破防"));
-      if (f.stunned) buffs.append(el("span", "buff debuff", "💫 被控制"));
+      if (f.big) buffs.append(el("span", "buff", "🔥 巨化狂暴"));
+      if (f.onion > 0) buffs.append(el("span", "buff", "🧅 强化大葱"));
+      if ((f.empTimer || f.emp_atk) > 0) buffs.append(el("span", "buff", "⚡ 强化普攻"));
+      if ((f.domainTimer || f.domain) > 0) buffs.append(el("span", "buff", "🌌 领域移速UP"));
+      if ((f.slowTimer || f.slow) > 0) buffs.append(el("span", "buff debuff", "🕸 缠绕减速"));
+      if (domainDebuff) buffs.append(el("span", "buff debuff", "⬇ 领域侵蚀"));
+      if ((f.stunTimer || 0) > 0 || f.stunned) buffs.append(el("span", "buff debuff", "🚫 被控制"));
     }
 
-    function renderBattle() {
-      const bs = room.battle_state;
-      if (!bs || !bs.host) return;
-      const domainActive = bs.host.domain > 0 || bs.guest.domain > 0;
-      $("arena").classList.toggle("domain-on", domainActive);
-
-      renderFighter("host", bs.host, bs.guest.domain > 0);
-      renderFighter("guest", bs.guest, bs.host.domain > 0);
-
-      if (bs.last && bs.last.key !== lastAnimKey) {
-        lastAnimKey = bs.last.key;
-        const atkW = bs.last.by === "host" ? $("hWrap") : $("gWrap");
-        const defW = bs.last.by === "host" ? $("gWrap") : $("hWrap");
-        atkW.classList.remove("anim-dash-l", "anim-dash-r");
-        defW.classList.remove("anim-hit");
-        void atkW.offsetWidth;
-        atkW.classList.add(bs.last.by === "host" ? "anim-dash-l" : "anim-dash-r");
-        if (bs.last.hit) defW.classList.add("anim-hit");
-      }
-
-      const role = myRole();
-      const myTurn = room.status === "fighting" && bs.turn === role;
-      if (room.status === "finished") {
-        $("turnTip").textContent = bs.winner === role ? "🏆 恭喜！你赢得了本场对决！" : "💀 对决结束，对手获胜！";
-        $("endBar").style.display = "flex";
-        $("rematchBtn").style.display = role === "host" ? "inline-block" : "none";
-      } else {
-        $("endBar").style.display = "none";
-        $("turnTip").textContent = "第 " + bs.round + " 回合 · " + (myTurn ? "轮到你出招！" : "等待对手行动…");
-      }
-
-      // 渲染自己的技能按钮
-      const meF = bs[role];
-      const charDef = byId(meF.cid);
-      const bar = $("skillBar");
-      bar.replaceChildren();
-
-      const basicBtn = el("button", "sk-btn");
-      basicBtn.type = "button";
-      basicBtn.disabled = !myTurn;
-      const bImg = el("img");
-      bImg.src = charDef.skills[0].icon;
-      const bTxt = el("div");
-      bTxt.append(el("b", "", "普通攻击" + (meF.emp_atk > 0 ? "（强化中）" : "")), el("span", "", "无冷却 · 造成 85% 伤害"));
-      basicBtn.append(bImg, bTxt);
-      basicBtn.onclick = () => act(-1);
-      bar.append(basicBtn);
-
-      charDef.skills.forEach((sk, idx) => {
-        const b = el("button", "sk-btn");
-        b.type = "button";
-        const cd = meF.cds[idx] || 0;
-        b.disabled = !myTurn || cd > 0;
-        const img = el("img");
-        img.src = sk.icon;
-        const txt = el("div");
-        const title = (idx === 2 && meF.rage) ? "狂暴位移突袭" : sk.name;
-        txt.append(el("b", "", title), el("span", "", cd > 0 ? "冷却中：" + cd + " 回合" : "可用"));
-        b.append(img, txt);
-        b.onclick = () => act(idx);
-        bar.append(b);
-      });
-
+    function addLog(text) {
       const logs = $("logs");
-      logs.replaceChildren();
-      (bs.logs || []).slice(-12).forEach(line => logs.append(el("div", "", line)));
+      logs.append(el("div", "", text));
+      while (logs.children.length > 16) logs.removeChild(logs.firstChild);
       logs.scrollTop = logs.scrollHeight;
     }
 
-    function calcDmg(atk, def, mul, enemyInDomain) {
-      const realDef = enemyInDomain ? Math.round(def * 0.75) : def;
-      return Math.max(25, Math.round(atk * mul - realDef * 0.45));
+    function spawnFx(fx, fromPct, toPct) {
+      const layer = $("fxLayer");
+      if (!fx) return;
+      if (fx === "laser_red" || fx === "laser_gold") {
+        const l = el("div", "fx-laser " + (fx === "laser_red" ? "red" : "gold"));
+        const lx = Math.min(fromPct, toPct), rx = Math.max(fromPct, toPct);
+        l.style.left = lx + "%"; l.style.top = "62%"; l.style.width = Math.max(12, rx - lx) + "%";
+        layer.append(l);
+        setTimeout(() => l.remove(), 450);
+      } else if (fx === "code" || fx === "ban" || fx === "tentacle") {
+        const z = el("div", "fx-zone " + fx); z.style.left = toPct + "%";
+        layer.append(z);
+        setTimeout(() => z.remove(), 950);
+        if (fx === "code") { const b = el("div", "fx-banner fx-code", "<SYSTEM.LOCK() /> 代码禁锢！"); layer.append(b); setTimeout(() => b.remove(), 1000); }
+        if (fx === "ban") { const b = el("div", "fx-banner fx-ban", "🚫 [ BANNED · 站长权限封禁 ]"); layer.append(b); setTimeout(() => b.remove(), 1100); }
+      } else if (fx === "ink_black" || fx === "cthulhu") {
+        const b = el("div", "fx-banner fx-ink", fx === "cthulhu" ? "🐙 克苏鲁精神污染！" : "🖤 深海黑墨致盲！");
+        layer.append(b); setTimeout(() => b.remove(), 1000);
+      } else if (fx === "slash") {
+        const s = el("div", "fx-slash", "⚔️"); s.style.left = toPct + "%"; s.style.top = "60%";
+        layer.append(s); setTimeout(() => s.remove(), 350);
+      }
     }
 
-    async function act(skIdx) {
-      const role = myRole();
-      const bs = JSON.parse(JSON.stringify(room.battle_state));
-      if (room.status !== "fighting" || bs.turn !== role) return;
+    /* ================= 玩法一：实时横版自由对战 ================= */
+    function bindRealtimeControls() {
+      const hold = (id, key) => {
+        const b = $(id);
+        b.onpointerdown = e => { e.preventDefault(); keys[key] = true; };
+        b.onpointerup = b.onpointercancel = b.onpointerleave = () => { keys[key] = false; };
+      };
+      hold("btnLeft", "left"); hold("btnRight", "right"); hold("btnJump", "jump");
 
-      const opp = role === "host" ? "guest" : "host";
-      const meF = bs[role], opF = bs[opp];
-      const c = byId(meF.cid);
-      let log = "", hit = true;
+      window.addEventListener("keydown", e => {
+        if (mode !== "rt_ai" || !rtState || rtState.finished) return;
+        const k = e.key.toLowerCase();
+        if (k === "a" || e.key === "ArrowLeft") keys.left = true;
+        if (k === "d" || e.key === "ArrowRight") keys.right = true;
+        if (k === "w" || e.key === "ArrowUp") keys.jump = true;
+        if (k === "j") rtCast("p1", -1);
+        if (k === "u") rtCast("p1", 0);
+        if (k === "k") rtCast("p1", 1);
+        if (k === "l") rtCast("p1", 2);
+      });
+      window.addEventListener("keyup", e => {
+        const k = e.key.toLowerCase();
+        if (k === "a" || e.key === "ArrowLeft") keys.left = false;
+        if (k === "d" || e.key === "ArrowRight") keys.right = false;
+        if (k === "w" || e.key === "ArrowUp") keys.jump = false;
+      });
+    }
 
-      // 冷却递减
-      meF.cds = meF.cds.map(x => Math.max(0, x - 1));
+    function mkRtUnit(cid, x, dir) {
+      const c = byId(cid);
+      return { cid: c.id, name: c.name, hp: c.hp, max_hp: c.hp, atk: c.atk, def: c.def, spd: c.spd, x, y: 0, vy: 0, dir, cds: [0, 0, 0, 0], onion: 0, empTimer: 0, big: false, domainTimer: 0, slowTimer: 0, stunTimer: 0, aiThink: 0.4 };
+    }
 
-      if (skIdx === -1) {
-        let mul = meF.emp_atk > 0 ? 1.25 : 0.85;
-        let dmg = calcDmg(meF.atk, opF.def, mul, meF.domain > 0);
-        opF.hp = Math.max(0, opF.hp - dmg);
-        log = meF.name + " 使用普通攻击" + (meF.emp_atk > 0 ? "（强化）" : "") + "，造成 " + dmg + " 伤害";
-        if (meF.emp_atk > 0) meF.emp_atk--;
-      } else {
-        const sk = c.skills[skIdx];
-        meF.cds[skIdx] = sk.cd;
+    function startRealtimeBattle() {
+      cancelAnimationFrame(rafId);
+      const mapIdx = Math.floor(Math.random() * BG_MAPS.length);
+      const m = BG_MAPS[mapIdx];
+      $("stage").style.backgroundImage = "url('" + m.img + "')";
+      $("groundTrack").style.display = "none";
+      $("tbHintRow").style.display = "none";
+      $("rtMovePad").style.display = "flex";
+      $("endBar").style.display = "none";
+      $("fxLayer").replaceChildren();
+      $("logs").replaceChildren();
 
-        if (sk.type === "dash_onion") {
-          const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
-          opF.hp = Math.max(0, opF.hp - dmg);
-          meF.onion = 1;
-          log = meF.name + " 发动「大葱突进」造成 " + dmg + " 伤害，并获得 1 发强化大葱！";
-        } else if (sk.type === "charge_buff") {
-          const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
-          opF.hp = Math.max(0, opF.hp - dmg);
-          meF.emp_atk = 2;
-          log = meF.name + " 蓄力重击造成 " + dmg + " 大量伤害，并获得 2 回合强化普攻！";
-        } else if (sk.type === "milk_rage") {
-          if (!meF.rage) {
-            meF.rage = true;
-            meF.atk = Math.round(meF.atk * 1.3);
-            meF.def = Math.round(meF.def * 1.15);
-            meF.cds[skIdx] = 1;
-            hit = false;
-            log = meF.name + " 喝下牛奶！体型放大进入【狂暴模式】，属性大幅提升，大招变为位移突袭！";
-          } else {
-            const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
-            opF.hp = Math.max(0, opF.hp - dmg);
-            log = meF.name + " 发动「狂暴位移」高速突袭，造成 " + dmg + " 伤害！";
+      rtState = { map: m, p1: mkRtUnit(localPick.host, 18, 1), p2: mkRtUnit(localPick.guest, 82, -1), finished: false, dotTick: 0 };
+      $("fHost").classList.remove("smooth");
+      $("fGuest").classList.remove("smooth");
+      $("hImg").src = byId(rtState.p1.cid).avatar;
+      $("hImg").onerror = () => { if (byId(rtState.p1.cid).fallbackAvatar) $("hImg").src = byId(rtState.p1.cid).fallbackAvatar; };
+      $("gImg").src = byId(rtState.p2.cid).avatar;
+      $("gImg").onerror = () => { if (byId(rtState.p2.cid).fallbackAvatar) $("gImg").src = byId(rtState.p2.cid).fallbackAvatar; };
+      $("hTag").textContent = rtState.p1.name;
+      $("gTag").textContent = rtState.p2.name;
+
+      addLog("⚡ 实时横版开始！地图【" + m.name + "】自由跑跳出招！");
+      buildRtSkillButtons();
+      lastTs = performance.now();
+      rafId = requestAnimationFrame(rtLoop);
+    }
+
+    function buildRtSkillButtons() {
+      const bar = $("skillBar");
+      bar.replaceChildren();
+      const c = byId(rtState.p1.cid);
+      const makeBtn = (idx, title, sub, icon) => {
+        const b = el("button", "sk-btn"); b.type = "button"; b.id = "rtSk_" + idx;
+        const im = el("img"); im.src = icon;
+        const tx = el("div"); tx.append(el("b", "", title), el("span", "cd-txt", sub));
+        b.append(im, tx);
+        b.onclick = () => rtCast("p1", idx);
+        bar.append(b);
+      };
+      makeBtn(-1, "普通攻击(J)", "0.7s", c.skills[0].icon);
+      c.skills.forEach((sk, i) => makeBtn(i, sk.name + "(" + ["U","K","L"][i] + ")", "就绪", sk.icon));
+    }
+
+    function rtLoop(now) {
+      if (!rtState) return;
+      const dt = Math.min(0.05, (now - lastTs) / 1000);
+      lastTs = now;
+
+      const { p1, p2 } = rtState;
+      [p1, p2].forEach(u => {
+        for (let i = 0; i < 4; i++) u.cds[i] = Math.max(0, u.cds[i] - dt);
+        if (u.empTimer > 0) u.empTimer = Math.max(0, u.empTimer - dt);
+        if (u.domainTimer > 0) u.domainTimer = Math.max(0, u.domainTimer - dt);
+        if (u.slowTimer > 0) u.slowTimer = Math.max(0, u.slowTimer - dt);
+        if (u.stunTimer > 0) u.stunTimer = Math.max(0, u.stunTimer - dt);
+        if (u.y > 0 || u.vy !== 0) {
+          u.y += u.vy * dt; u.vy -= 620 * dt;
+          if (u.y <= 0) { u.y = 0; u.vy = 0; }
+        }
+      });
+
+      if (!rtState.finished) {
+        // P1 自由移动
+        if (p1.stunTimer <= 0) {
+          const spd = (26 + (p1.domainTimer > 0 ? 18 : 0)) * (p1.slowTimer > 0 ? 0.55 : 1);
+          if (keys.left) { p1.x -= spd * dt; p1.dir = -1; }
+          if (keys.right) { p1.x += spd * dt; p1.dir = 1; }
+          if (keys.jump && p1.y === 0) p1.vy = 250;
+          p1.x = Math.max(6, Math.min(94, p1.x));
+        }
+        // AI 自由走位与出招
+        if (p2.stunTimer <= 0) {
+          const spd2 = (22 + (p2.domainTimer > 0 ? 16 : 0)) * (p2.slowTimer > 0 ? 0.55 : 1);
+          const dx = p1.x - p2.x;
+          p2.dir = dx >= 0 ? 1 : -1;
+          if (Math.abs(dx) > 22) p2.x += p2.dir * spd2 * dt;
+          p2.x = Math.max(6, Math.min(94, p2.x));
+          p2.aiThink -= dt;
+          if (p2.aiThink <= 0) {
+            p2.aiThink = 0.65;
+            const d = Math.abs(p1.x - p2.x);
+            const c2 = byId(p2.cid);
+            const idx = c2.skills.findIndex((s, i) => p2.cds[i + 1] <= 0 && d <= s.range * 14);
+            if (idx !== -1) rtCast("p2", idx);
+            else if (d <= 24 && p2.cds[0] <= 0) rtCast("p2", -1);
           }
-        } else if (sk.type === "stink_cc") {
-          const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
-          opF.hp = Math.max(0, opF.hp - dmg);
-          const cc = Math.random() < 0.65;
-          if (cc) opF.stunned = true;
-          log = meF.name + " 释放「臭气控制」造成 " + dmg + " 伤害" + (cc ? "，对手被熏晕了！" : "！");
-        } else if (sk.type === "laser") {
-          const dmg = calcDmg(meF.atk, opF.def, sk.power, meF.domain > 0);
-          opF.hp = Math.max(0, opF.hp - dmg);
-          log = meF.name + " 发射「斜眼激光」贯穿对手，造成 " + dmg + " 伤害！";
-        } else if (sk.type === "domain_cc") {
-          const cost = Math.max(1, Math.floor(meF.hp * 0.28));
-          meF.hp = Math.max(1, meF.hp - cost);
-          const dmg = calcDmg(meF.atk, opF.def, sk.power, true);
-          opF.hp = Math.max(0, opF.hp - dmg);
-          meF.domain = 3;
-          meF.spd += 30;
-          opF.stunned = true;
-          log = meF.name + " 【领域展开】！消耗 " + cost + " 生命值，移速飙升并 100% 强制控制对手，造成 " + dmg + " 伤害！";
+        }
+        // 领域持续扣血
+        rtState.dotTick += dt;
+        if (rtState.dotTick >= 1) {
+          rtState.dotTick = 0;
+          if (p1.domainTimer > 0) p2.hp = Math.max(0, p2.hp - 25);
+          if (p2.domainTimer > 0) p1.hp = Math.max(0, p1.hp - 25);
+        }
+        if (p1.hp <= 0 || p2.hp <= 0) {
+          rtState.finished = true;
+          const win = p1.hp > 0 ? p1.name : p2.name;
+          addLog("🏆 " + win + " 赢得实时对决！");
+          $("turnTip").textContent = "🏆 对决结束！" + win + " 获胜！";
+          $("endBar").style.display = "flex";
+          $("rematchBtn").style.display = "inline-block";
         }
       }
 
-      // 触发团子环绕大葱额外攻击
-      if (hit && meF.onion > 0 && !(skIdx === 0 && c.skills[0].type === "dash_onion") && opF.hp > 0) {
-        const extra = calcDmg(meF.atk, opF.def, 0.45, meF.domain > 0);
-        opF.hp = Math.max(0, opF.hp - extra);
-        meF.onion = 0;
-        log += " 🧅 环绕大葱追击 +" + extra + " 伤害！";
+      // 更新舞台画面
+      $("stage").classList.toggle("domain-on", p1.domainTimer > 0 || p2.domainTimer > 0);
+      renderHud("h", p1, p2.domainTimer > 0);
+      renderHud("g", p2, p1.domainTimer > 0);
+
+      [["fHost", p1], ["fGuest", p2]].forEach(([id, u]) => {
+        const elU = $(id);
+        elU.style.left = u.x + "%";
+        elU.style.bottom = (12 + u.y * 0.28) + "%";
+        elU.style.transform = "translateX(-50%) scale(" + (u.big ? 1.32 : 1) + ")";
+        elU.querySelector("img").style.transform = "scaleX(" + u.dir + ")";
+        elU.classList.toggle("big", u.big);
+        let orb = elU.querySelector(".onion-orbit");
+        if (u.onion > 0 && !orb) { elU.append(el("span", "onion-orbit", "🧅")); }
+        else if (u.onion <= 0 && orb) { orb.remove(); }
+      });
+
+      if (!rtState.finished) {
+        $("turnTip").textContent = "⚡ 实时横版【" + rtState.map.name + "】· 距离 " + Math.round(Math.abs(p1.x - p2.x)) + "%";
       }
 
-      // 领域持续负面扣血
-      if (opF.hp > 0 && meF.domain > 0) {
-        opF.hp = Math.max(0, opF.hp - 45);
-        meF.domain--;
-        log += " 🌌 领域侵蚀对手 -45 生命。";
+      // 更新冷却按钮文字
+      const bBasic = $("rtSk_-1");
+      if (bBasic) {
+        bBasic.disabled = rtState.finished || p1.stunTimer > 0 || p1.cds[0] > 0;
+        bBasic.querySelector(".cd-txt").textContent = p1.cds[0] > 0 ? p1.cds[0].toFixed(1) + "s" : (p1.empTimer > 0 ? "强化中!" : "可用");
+      }
+      byId(p1.cid).skills.forEach((sk, i) => {
+        const b = $("rtSk_" + i);
+        if (!b) return;
+        const cd = p1.cds[i + 1];
+        b.disabled = rtState.finished || p1.stunTimer > 0 || cd > 0;
+        const title = (i === 2 && p1.cid === "tuanzi" && p1.big) ? "狂暴位移(L)" : sk.name;
+        b.querySelector("b").textContent = title;
+        b.querySelector(".cd-txt").textContent = cd > 0 ? cd.toFixed(1) + "s" : "就绪";
+      });
+
+      rafId = requestAnimationFrame(rtLoop);
+    }
+
+    function rtCast(who, idx) {
+      if (!rtState || rtState.finished) return;
+      const u = rtState[who], opp = rtState[who === "p1" ? "p2" : "p1"];
+      if (u.stunTimer > 0) return;
+      const cdSlot = idx + 1;
+      if (u.cds[cdSlot] > 0) return;
+      const distPct = Math.abs(u.x - opp.x);
+      u.dir = opp.x >= u.x ? 1 : -1;
+
+      if (idx === -1) {
+        u.cds[0] = 0.7;
+        if (distPct > 25) { spawnFx("slash", u.x, u.x + u.dir * 12); return; }
+        const dmg = Math.round(u.atk * (u.empTimer > 0 ? 1.35 : 0.85) - opp.def * 0.4);
+        opp.hp = Math.max(0, opp.hp - dmg);
+        spawnFx("slash", u.x, opp.x);
+        addLog(u.name + (u.empTimer > 0 ? " 强化普攻" : " 普攻") + "命中 -" + dmg);
+        if (u.onion > 0) {
+          u.onion = 0;
+          const ex = Math.round(u.atk * 0.55);
+          opp.hp = Math.max(0, opp.hp - ex);
+          addLog("🧅 环绕大葱自动追击 -" + ex + "！");
+        }
+        return;
       }
 
-      bs.logs.push(log);
-      bs.last = { by: role, hit, key: Date.now() + "-" + Math.random() };
+      const sk = byId(u.cid).skills[idx];
+      u.cds[cdSlot] = sk.cd * 1.8 + 1.2;
+      const maxRangePct = sk.range * 14;
 
-      let nextStatus = "fighting";
-      if (opF.hp <= 0) {
-        nextStatus = "finished";
-        bs.winner = role;
-        bs.logs.push("🎉 " + meF.name + " 击败了 " + opF.name + "！");
-      } else if (opF.stunned) {
-        opF.stunned = false;
-        bs.turn = role;
-        bs.round++;
-        bs.logs.push("💫 " + opF.name + " 被控制跳过回合，" + meF.name + " 继续行动！");
+      if (sk.type === "dash_onion") {
+        u.x = Math.max(6, Math.min(94, u.x + u.dir * 22));
+        u.onion = 1;
+        if (Math.abs(u.x - opp.x) <= 26) {
+          const dmg = Math.round(u.atk * sk.power - opp.def * 0.4);
+          opp.hp = Math.max(0, opp.hp - dmg);
+          addLog(u.name + " 大葱突进命中 -" + dmg + "，获得环绕大葱！");
+        } else addLog(u.name + " 大葱突进位移，获得环绕大葱！");
+      } else if (sk.type === "charge_buff") {
+        u.empTimer = 2.0;
+        if (distPct <= 28) {
+          const dmg = Math.round(u.atk * sk.power - opp.def * 0.4);
+          opp.hp = Math.max(0, opp.hp - dmg);
+          spawnFx("slash", u.x, opp.x);
+          addLog(u.name + " 蓄力重击 -" + dmg + "，获得 2 秒强化普攻！");
+        } else addLog(u.name + " 蓄力完成，获得 2 秒强化普攻！");
+      } else if (sk.type === "milk_rage") {
+        if (!u.big) {
+          u.big = true; u.atk = Math.round(u.atk * 1.3); u.cds[cdSlot] = 2.5;
+          addLog(u.name + " 喝下牛奶体型变大进入狂暴模式！");
+        } else {
+          u.x = Math.max(6, Math.min(94, u.x + u.dir * 30));
+          u.cds[cdSlot] = 3.0;
+          if (Math.abs(u.x - opp.x) <= 28) {
+            const dmg = Math.round(u.atk * sk.power - opp.def * 0.4);
+            opp.hp = Math.max(0, opp.hp - dmg);
+            addLog(u.name + " 狂暴位移突袭命中 -" + dmg + "！");
+          }
+        }
+      } else if (sk.type === "domain_cc") {
+        const cost = Math.max(1, Math.floor(u.hp * 0.28));
+        u.hp = Math.max(1, u.hp - cost);
+        u.domainTimer = 7.0;
+        opp.stunTimer = 2.2;
+        const dmg = Math.round(u.atk * sk.power);
+        opp.hp = Math.max(0, opp.hp - dmg);
+        addLog(u.name + " 领域展开！自损 " + cost + " 血，移速大增并强制控制敌人 2.2 秒！");
+      } else if (sk.type === "cthulhu_ult") {
+        u.big = true; u.atk = Math.round(u.atk * 1.25);
+        opp.stunTimer = 2.2;
+        const dmg = Math.round(u.atk * sk.power - opp.def * 0.3);
+        opp.hp = Math.max(0, opp.hp - dmg);
+        spawnFx("cthulhu", u.x, opp.x);
+        addLog(u.name + " 开启【克苏鲁状态】体型巨化！精神污染控制敌人 -" + dmg + "！");
       } else {
-        bs.turn = opp;
-        bs.round++;
+        spawnFx(sk.fx, u.x, opp.x);
+        if (distPct <= maxRangePct) {
+          const dmg = Math.round(u.atk * sk.power - opp.def * 0.35);
+          opp.hp = Math.max(0, opp.hp - dmg);
+          if (sk.type === "stink_cc" || sk.type === "ink_cc" || sk.type === "code_cc") opp.stunTimer = 1.6;
+          if (sk.type === "ban_ult") opp.stunTimer = 2.4;
+          if (sk.type === "tentacle_slow") opp.slowTimer = 3.5;
+          addLog(u.name + " 释放「" + sk.name + "」命中 -" + dmg + "！");
+          if (u.onion > 0) {
+            u.onion = 0;
+            const ex = Math.round(u.atk * 0.55);
+            opp.hp = Math.max(0, opp.hp - ex);
+            addLog("🧅 环绕大葱追击 -" + ex + "！");
+          }
+        } else addLog(u.name + " 释放「" + sk.name + "」，但距离太远未命中！");
+      }
+    }
+
+    /* ================= 玩法二：经典回合制对战 ================= */
+    function makeTbFighter(cid, x) {
+      const c = byId(cid);
+      return { cid: c.id, name: c.name, hp: c.hp, max_hp: c.hp, atk: c.atk, def: c.def, spd: c.spd, move: c.move || 2, x, cds: [0, 0, 0], onion: 0, emp_atk: 0, big: false, domain: 0, slow: 0, stunned: false };
+    }
+    function createTbBattle(hCid, gCid) {
+      const h = makeTbFighter(hCid, 1), g = makeTbFighter(gCid, 7);
+      const first = h.spd >= g.spd ? "host" : "guest";
+      const mapIdx = Math.floor(Math.random() * BG_MAPS.length);
+      return { turn: first, round: 1, moved: false, mapIdx, host: h, guest: g, last: null, winner: null, logs: ["随机地图【" + BG_MAPS[mapIdx].name + "】！", (first === "host" ? h.name : g.name) + " 先手！"] };
+    }
+    function renderRoom() {
+      if (!room) return;
+      if (room.status === "waiting") {
+        $("waitRoom").style.display = "block"; $("battleArea").style.display = "none";
+        $("roomTitle").textContent = "房间号：" + room.code;
+        const role = room.host_id === me.id ? "host" : "guest";
+        renderCharPick(role === "host" ? room.host_char : room.guest_char);
+        const hName = byId(room.host_char).name + (room.host_ready ? "（已准备）" : "（未准备）");
+        const gName = room.guest_id ? (byId(room.guest_char).name + (room.guest_ready ? "（已准备）" : "（未准备）")) : "等待对手加入…";
+        $("waitStatus").textContent = "房主：" + hName + "  |  对手：" + gName;
+        $("readyBtn").textContent = (role === "host" ? room.host_ready : room.guest_ready) ? "取消准备" : "准备出战";
+      } else {
+        $("waitRoom").style.display = "none"; $("battleArea").style.display = "block";
+        renderTbBattle();
+      }
+    }
+    function tbDist(a, b) { return Math.abs(a.x - b.x); }
+    function xToPct(x) { return x * 10 + 10; }
+
+    function renderTbBattle() {
+      const bs = room.battle_state;
+      if (!bs || !bs.host) return;
+      const m = BG_MAPS[bs.mapIdx || 0] || BG_MAPS[0];
+      $("stage").style.backgroundImage = "url('" + m.img + "')";
+      $("stage").classList.toggle("domain-on", bs.host.domain > 0 || bs.guest.domain > 0);
+      $("groundTrack").style.display = "grid";
+      $("rtMovePad").style.display = "none";
+
+      renderHud("h", bs.host, bs.guest.domain > 0);
+      renderHud("g", bs.guest, bs.host.domain > 0);
+
+      const activeRole = bs.turn;
+      const isMy = room.status === "fighting" && (mode === "tb_pvp" || (mode === "tb_ai" && activeRole === "host") || (mode === "online" && ((room.host_id === me.id && activeRole === "host") || (room.guest_id === me.id && activeRole === "guest"))));
+      const activeF = bs[activeRole];
+      const maxM = Math.max(1, activeF.move + (activeF.domain > 0 ? 2 : 0) - (activeF.slow > 0 ? 1 : 0));
+
+      const track = $("groundTrack"); track.replaceChildren();
+      for (let x = 0; x < 9; x++) {
+        const s = el("div", "slot");
+        if (isMy && !bs.moved && bs.host.x !== x && bs.guest.x !== x && Math.abs(activeF.x - x) <= maxM) {
+          s.classList.add("walkable"); s.onclick = () => tbMove(x);
+        }
+        track.append(s);
       }
 
-      const { data } = await db.from("rooms").update({
-        status: nextStatus,
-        battle_state: bs,
-        updated_at: new Date().toISOString()
-      }).eq("id", room.id).select().single();
+      [["fHost", "hImg", "hTag", bs.host, 1], ["fGuest", "gImg", "gTag", bs.guest, -1]].forEach(([id, imgId, tagId, f, dir]) => {
+        const box = $(id), c = byId(f.cid);
+        box.classList.add("smooth");
+        box.style.left = xToPct(f.x) + "%";
+        box.style.bottom = "12%";
+        box.style.transform = "translateX(-50%) scale(" + (f.big ? 1.3 : 1) + ")";
+        box.classList.toggle("big", f.big);
+        $(tagId).textContent = f.name;
+        $(imgId).src = c.avatar;
+        $(imgId).onerror = () => { if (c.fallbackAvatar) $(imgId).src = c.fallbackAvatar; };
+        $(imgId).style.transform = "scaleX(" + dir + ")";
+      });
+
+      if (bs.last && bs.last.key !== lastAnimKey) {
+        lastAnimKey = bs.last.key;
+        spawnFx(bs.last.fx, xToPct(bs.last.fromX), xToPct(bs.last.toX));
+      }
+
+      if (room.status === "finished") {
+        $("turnTip").textContent = "🏆 对决结束！" + bs[bs.winner].name + " 获胜！";
+        $("endBar").style.display = "flex";
+        $("rematchBtn").style.display = (mode !== "online" || room.host_id === me.id) ? "inline-block" : "none";
+        $("tbHintRow").style.display = "none";
+      } else {
+        $("endBar").style.display = "none";
+        $("tbHintRow").style.display = "flex";
+        $("endTurnBtn").style.display = isMy ? "inline-block" : "none";
+        $("turnTip").textContent = "♟️【" + m.name + "】第 " + bs.round + " 回合 · 相距 " + tbDist(bs.host, bs.guest) + " 格 · " + (isMy ? "轮到 " + activeF.name : "等待对手…");
+        $("moveTip").textContent = isMy ? (bs.moved ? "已移动，请出招" : "点绿点左右移动（最多 " + maxM + " 格）") : "对方思考中…";
+      }
+
+      const bar = $("skillBar"); bar.replaceChildren();
+      const viewRole = mode === "online" ? (room.host_id === me.id ? "host" : "guest") : (mode === "tb_ai" ? "host" : activeRole);
+      const myF = bs[viewRole], charDef = byId(myF.cid), d = tbDist(bs.host, bs.guest);
+      const addB = (t, sub, ic, dis, fn) => {
+        const b = el("button", "sk-btn"); b.type = "button"; b.disabled = dis;
+        const im = el("img"); im.src = ic;
+        const tx = el("div"); tx.append(el("b", "", t), el("span", "", sub));
+        b.append(im, tx); b.onclick = fn; bar.append(b);
+      };
+      addB("普通攻击", "射程2格", charDef.skills[0].icon, !isMy || d > 2, () => tbAct(-1));
+      charDef.skills.forEach((sk, i) => {
+        const cd = myF.cds[i] || 0;
+        addB((i === 2 && myF.cid === "tuanzi" && myF.big) ? "狂暴位移" : sk.name, cd > 0 ? "冷却" + cd + "回合" : (d > sk.range ? "射程≤" + sk.range : "可用"), sk.icon, !isMy || cd > 0 || d > sk.range, () => tbAct(i));
+      });
+
+      const logs = $("logs"); logs.replaceChildren();
+      (bs.logs || []).slice(-10).forEach(l => logs.append(el("div", "", l)));
+      logs.scrollTop = logs.scrollHeight;
+      if (mode === "tb_ai" && room.status === "fighting" && bs.turn === "guest") setTimeout(tbAiTurn, 650);
+    }
+
+    async function tbSave(st, bs) {
+      if (mode !== "online") { room.status = st; room.battle_state = bs; renderRoom(); return; }
+      const { data } = await db.from("rooms").update({ status: st, battle_state: bs, updated_at: new Date().toISOString() }).eq("id", room.id).select().single();
       if (data) { room = data; renderRoom(); }
+    }
+    async function tbMove(nx) {
+      const bs = JSON.parse(JSON.stringify(room.battle_state));
+      if (bs.moved) return;
+      bs[bs.turn].x = nx; bs.moved = true;
+      bs.logs.push(bs[bs.turn].name + " 移动到第 " + (nx + 1) + " 号位");
+      await tbSave(room.status, bs);
+    }
+    $("endTurnBtn").onclick = () => tbAct(-99);
+
+    async function tbAct(skIdx) {
+      const bs = JSON.parse(JSON.stringify(room.battle_state));
+      if (room.status !== "fighting") return;
+      const role = bs.turn, opp = role === "host" ? "guest" : "host", meF = bs[role], opF = bs[opp], c = byId(meF.cid);
+      let log = "", hit = true, fx = null;
+      meF.cds = meF.cds.map(x => Math.max(0, x - 1));
+      if (meF.slow > 0) meF.slow--;
+      const dmgCalc = (m) => Math.max(25, Math.round(meF.atk * m - (meF.domain > 0 ? opF.def * 0.75 : opF.def) * 0.45));
+
+      if (skIdx === -99) { hit = false; log = meF.name + " 跳过回合"; }
+      else if (skIdx === -1) { const dmg = dmgCalc(meF.emp_atk > 0 ? 1.25 : 0.85); opF.hp = Math.max(0, opF.hp - dmg); if (meF.emp_atk > 0) meF.emp_atk--; fx = "slash"; log = meF.name + " 普攻 -" + dmg; }
+      else {
+        const sk = c.skills[skIdx]; meF.cds[skIdx] = sk.cd; fx = sk.fx;
+        if (sk.type === "dash_onion") { meF.x = meF.x < opF.x ? Math.max(0, opF.x - 1) : Math.min(8, opF.x + 1); const dmg = dmgCalc(sk.power); opF.hp = Math.max(0, opF.hp - dmg); meF.onion = 1; log = meF.name + " 大葱突进 -" + dmg; }
+        else if (sk.type === "charge_buff") { const dmg = dmgCalc(sk.power); opF.hp = Math.max(0, opF.hp - dmg); meF.emp_atk = 2; log = meF.name + " 蓄力重击 -" + dmg; }
+        else if (sk.type === "milk_rage") { if (!meF.big) { meF.big = true; meF.atk = Math.round(meF.atk * 1.3); meF.cds[skIdx] = 1; hit = false; log = meF.name + " 喝牛奶进入狂暴模式！"; } else { meF.x = meF.x < opF.x ? Math.max(0, opF.x - 1) : Math.min(8, opF.x + 1); const dmg = dmgCalc(sk.power); opF.hp = Math.max(0, opF.hp - dmg); log = meF.name + " 狂暴位移 -" + dmg; } }
+        else if (sk.type === "domain_cc") { const cost = Math.max(1, Math.floor(meF.hp * 0.28)); meF.hp = Math.max(1, meF.hp - cost); const dmg = dmgCalc(sk.power); opF.hp = Math.max(0, opF.hp - dmg); meF.domain = 3; opF.stunned = true; log = meF.name + " 领域展开！自损 " + cost + " 强控对手 -" + dmg; }
+        else if (sk.type === "cthulhu_ult") { meF.big = true; meF.atk = Math.round(meF.atk * 1.25); const dmg = dmgCalc(sk.power); opF.hp = Math.max(0, opF.hp - dmg); opF.stunned = true; log = meF.name + " 克苏鲁状态精神控制 -" + dmg; }
+        else { const dmg = dmgCalc(sk.power); opF.hp = Math.max(0, opF.hp - dmg); if (["stink_cc","ink_cc","code_cc","ban_ult"].includes(sk.type)) opF.stunned = true; if (sk.type === "tentacle_slow") opF.slow = 2; log = meF.name + " 「" + sk.name + "」 -" + dmg; }
+      }
+      if (hit && meF.onion > 0 && skIdx !== 0 && opF.hp > 0) { const ex = dmgCalc(0.45); opF.hp = Math.max(0, opF.hp - ex); meF.onion = 0; log += " 🧅追击 -" + ex; }
+      if (opF.hp > 0 && meF.domain > 0) { opF.hp = Math.max(0, opF.hp - 45); meF.domain--; log += " 🌌领域 -45"; }
+
+      bs.logs.push(log); bs.last = { by: role, hit, fx, fromX: meF.x, toX: opF.x, key: Date.now() + "-" + Math.random() }; bs.moved = false;
+      let st = "fighting";
+      if (opF.hp <= 0) { st = "finished"; bs.winner = role; bs.logs.push("🎉 " + meF.name + " 获胜！"); }
+      else if (opF.stunned) { opF.stunned = false; bs.turn = role; bs.round++; bs.logs.push("🚫 " + opF.name + " 被控制跳过回合！"); }
+      else { bs.turn = opp; bs.round++; }
+      await tbSave(st, bs);
+    }
+
+    async function tbAiTurn() {
+      const bs = JSON.parse(JSON.stringify(room.battle_state));
+      if (room.status !== "fighting" || bs.turn !== "guest") return;
+      const ai = bs.guest, pl = bs.host;
+      if (!bs.moved && tbDist(ai, pl) > 2) {
+        const steps = Math.max(1, ai.move + (ai.domain > 0 ? 2 : 0) - (ai.slow > 0 ? 1 : 0));
+        const nx = Math.max(0, Math.min(8, ai.x + (ai.x > pl.x ? -1 : 1) * Math.min(steps, tbDist(ai, pl) - 1)));
+        if (nx !== pl.x && nx !== ai.x) { await tbMove(nx); return; }
+      }
+      const d = tbDist(ai, pl), c = byId(ai.cid);
+      const rIdx = c.skills.findIndex((s, i) => (ai.cds[i] || 0) === 0 && d <= s.range);
+      if (rIdx !== -1) await tbAct(rIdx); else if (d <= 2) await tbAct(-1); else await tbAct(-99);
     }
 
     $("rematchBtn").onclick = async () => {
-      if (myRole() !== "host") return;
-      const { data } = await db.from("rooms").update({
-        status: "waiting",
-        host_ready: false,
-        guest_ready: false,
-        battle_state: {},
-        updated_at: new Date().toISOString()
-      }).eq("id", room.id).select().single();
+      if (mode === "rt_ai") { startRealtimeBattle(); return; }
+      if (mode !== "online") { room.status = "fighting"; room.battle_state = createTbBattle(localPick.host, localPick.guest); renderRoom(); return; }
+      if (room.host_id !== me.id) return;
+      const { data } = await db.from("rooms").update({ status: "waiting", host_ready: false, guest_ready: false, battle_state: {}, updated_at: new Date().toISOString() }).eq("id", room.id).select().single();
       if (data) { room = data; renderRoom(); }
     };
 
