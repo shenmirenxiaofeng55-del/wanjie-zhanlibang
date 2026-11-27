@@ -76,8 +76,9 @@
     .fighter.big { filter: drop-shadow(0 0 16px rgba(255,110,60,.95)); }
     .fighter.hit { filter: brightness(2) drop-shadow(0 0 12px #ff5252); }
     .fighter img {
-      width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 14px;
-      border: 2px solid #7fe0a8; box-shadow: 0 8px 18px rgba(0,0,0,.75); background: rgba(10,16,32,.7);
+      width: 100%; height: 124px; aspect-ratio: auto; object-fit: contain;
+      border: 0; border-radius: 0; box-shadow: none; background: transparent;
+      filter: drop-shadow(0 5px 8px rgba(0,0,0,.55));
     }
     .fighter.p2 img { border-color: #ff8a80; }
     .fighter .tag-name {
@@ -293,6 +294,19 @@
     );
     const $ = id => document.getElementById(id);
     const CHARS = window.WANJIE_CHARACTERS || [];
+
+    // 新增的三套角色美术：依次应用到角色库前三个角色，保留原角色ID、属性和技能。
+    // 上传部署时请同时保留 assets 文件夹。
+    const NEW_FIGHTER_ART = [
+      "assets/fighter_hero.png",
+      "assets/fighter_tuanzi.png",
+      "assets/fighter_octopus.png"
+    ];
+    CHARS.slice(0, NEW_FIGHTER_ART.length).forEach((character, index) => {
+      character.avatar = NEW_FIGHTER_ART[index];
+      character.fallbackAvatar = NEW_FIGHTER_ART[index];
+    });
+
     const byId = id => CHARS.find(c => c.id === id) || CHARS[0];
 
     const BG_MAPS = [
